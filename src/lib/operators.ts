@@ -41,7 +41,7 @@ export async function updateOperatorStep(operatorId: string, stepNumber: number,
   };
 
   // Determine status
-  if (stepNumber === 8) {
+  if (stepNumber === 9) {
     updates.status = "complete";
     if (signatureName) updates.signature_name = signatureName;
   } else if (stepNumber === 0) {
@@ -70,13 +70,14 @@ export function getCompletedSteps(operator: Operator): boolean[] {
     operator.step_6_completed,
     operator.step_7_completed,
     operator.step_8_completed,
+    (operator as Record<string, unknown>).step_9_completed as boolean ?? false,
   ];
 }
 
 export function getCurrentStep(operator: Operator): number {
   const completed = getCompletedSteps(operator);
   const firstIncomplete = completed.findIndex((c) => !c);
-  return firstIncomplete === -1 ? 8 : firstIncomplete;
+  return firstIncomplete === -1 ? 9 : firstIncomplete;
 }
 
 export function getCompletedCount(operator: Operator): number {

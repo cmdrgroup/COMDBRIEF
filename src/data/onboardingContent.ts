@@ -5,6 +5,7 @@ export const STEP_NAMES = [
   "Mission Parameters",
   "Mission Failure Points",
   "Center of Gravity",
+  "Mind Clearing Operations",
   "Communications Protocol",
   "Daily Battle Rhythm",
   "Command Authorization",

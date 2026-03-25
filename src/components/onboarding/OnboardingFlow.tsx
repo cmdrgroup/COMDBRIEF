@@ -6,6 +6,7 @@ import RulesOfEngagementStep from "./steps/RulesOfEngagementStep";
 import MissionParametersStep from "./steps/MissionParametersStep";
 import FailurePointsStep from "./steps/FailurePointsStep";
 import CenterOfGravityStep from "./steps/CenterOfGravityStep";
+import MindClearingStep from "./steps/MindClearingStep";
 import CommunicationsStep from "./steps/CommunicationsStep";
 import BattleRhythmStep from "./steps/BattleRhythmStep";
 import SignatureStep from "./steps/SignatureStep";
@@ -20,11 +21,13 @@ interface OnboardingFlowProps {
   onSignature?: (name: string) => void;
 }
 
+const TOTAL_STEPS = 10;
+
 const OnboardingFlow = ({
   operatorName,
   operatorId,
   initialStep = 0,
-  initialCompleted = new Array(9).fill(false),
+  initialCompleted = new Array(TOTAL_STEPS).fill(false),
   onStepComplete,
   onSignature,
 }: OnboardingFlowProps) => {
@@ -55,7 +58,7 @@ const OnboardingFlow = ({
   );
 
   const handleContinue = useCallback(() => {
-    if (currentStep < 8) {
+    if (currentStep < TOTAL_STEPS - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       setShowCompletion(true);
@@ -64,7 +67,7 @@ const OnboardingFlow = ({
 
   const handleSignature = useCallback(
     (name: string) => {
-      handleAcknowledge(8);
+      handleAcknowledge(TOTAL_STEPS - 1);
       onSignature?.(name);
       setShowCompletion(true);
     },
@@ -89,9 +92,10 @@ const OnboardingFlow = ({
       case 3: return <MissionParametersStep {...stepProps} />;
       case 4: return <FailurePointsStep {...stepProps} />;
       case 5: return <CenterOfGravityStep {...stepProps} />;
-      case 6: return <CommunicationsStep {...stepProps} />;
-      case 7: return <BattleRhythmStep {...stepProps} />;
-      case 8: return <SignatureStep completedSteps={completedSteps} onSign={handleSignature} />;
+      case 6: return <MindClearingStep operatorId={operatorId} {...stepProps} />;
+      case 7: return <CommunicationsStep {...stepProps} />;
+      case 8: return <BattleRhythmStep {...stepProps} />;
+      case 9: return <SignatureStep completedSteps={completedSteps} onSign={handleSignature} />;
       default: return null;
     }
   };

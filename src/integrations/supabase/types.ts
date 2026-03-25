@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      charge_items: {
+        Row: {
+          category: string
+          cleared_at: string | null
+          content: string
+          created_at: string
+          id: string
+          is_cleared: boolean
+          operator_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          cleared_at?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_cleared?: boolean
+          operator_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cleared_at?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_cleared?: boolean
+          operator_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charge_items_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operators: {
         Row: {
           created_at: string
@@ -44,6 +88,8 @@ export type Database = {
           step_7_completed_at: string | null
           step_8_completed: boolean
           step_8_completed_at: string | null
+          step_9_completed: boolean
+          step_9_completed_at: string | null
           updated_at: string
         }
         Insert: {
@@ -75,6 +121,8 @@ export type Database = {
           step_7_completed_at?: string | null
           step_8_completed?: boolean
           step_8_completed_at?: string | null
+          step_9_completed?: boolean
+          step_9_completed_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -106,6 +154,8 @@ export type Database = {
           step_7_completed_at?: string | null
           step_8_completed?: boolean
           step_8_completed_at?: string | null
+          step_9_completed?: boolean
+          step_9_completed_at?: string | null
           updated_at?: string
         }
         Relationships: []
