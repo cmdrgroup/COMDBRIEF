@@ -1,0 +1,1 @@
+ALTER TABLE public.operators ADD COLUMN IF NOT EXISTS intake_data jsonb DEFAULT NULL;
