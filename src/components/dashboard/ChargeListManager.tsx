@@ -11,7 +11,7 @@ interface ChargeListManagerProps {
 
 const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListManagerProps) => {
   const queryClient = useQueryClient();
-  const [selectedCategory, setSelectedCategory] = useState(CHARGE_CATEGORIES[0].key);
+  const [selectedCategory, setSelectedCategory] = useState<string>(CHARGE_CATEGORIES[0].key);
   const [newContent, setNewContent] = useState("");
 
   const { data: items = [] } = useQuery({

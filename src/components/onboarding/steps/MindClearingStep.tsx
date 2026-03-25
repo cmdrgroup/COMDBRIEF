@@ -34,14 +34,13 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
 
   return (
     <StepLayout
+      stepNumber={5}
       title="MIND CLEARING OPERATIONS"
-      subtitle="CHARGE INVENTORY PROTOCOL"
       isCompleted={isCompleted}
-      acknowledged={acknowledged}
       onAcknowledge={() => { setAcknowledged(true); onAcknowledge(); }}
       onContinue={onContinue}
       acknowledgmentText="I have reviewed my charge inventory and understand the mind clearing protocol"
-      scrollRequired={hasItems}
+      requireScroll={hasItems}
     >
       <div className="space-y-6">
         <div className="text-sm text-steel-white/90 leading-relaxed space-y-3">
