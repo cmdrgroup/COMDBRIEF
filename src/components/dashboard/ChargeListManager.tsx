@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, X, Star, MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, X, Star, MessageSquare, ChevronDown, ChevronRight, Sparkles, Loader2, Check, XCircle } from "lucide-react";
 import { CHARGE_CATEGORIES, getChargeItems, addChargeItem, deleteChargeItem, updateChargeItem, type ChargeItem } from "@/lib/chargeItems";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+type DraftCharge = {
+  category: string;
+  statement: string;
+  chargeLevel: number;
+  inferred: boolean;
+  priorityRank?: number;
+  accepted: boolean;
+};
 
 interface ChargeListManagerProps {
   operatorId: string;
