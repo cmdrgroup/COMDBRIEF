@@ -72,6 +72,63 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["charge_items", operatorId] }),
   });
 
+  // AI generation mutation
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      // Parse intake text as key-value pairs or raw text
+      let intakeData: Record<string, string>;
+      try {
+        intakeData = JSON.parse(intakeText);
+      } catch {
+        // Treat as free-text intake
+        intakeData = { raw_intake: intakeText };
+      }
+
+      const { data, error } = await supabase.functions.invoke("generate-charges", {
+        body: { intakeData, operatorName },
+      });
+
+      if (error) throw new Error(error.message || "Failed to generate charges");
+      if (data?.error) throw new Error(data.error);
+      return data as { charges: DraftCharge[] };
+    },
+    onSuccess: (data) => {
+      setDrafts(data.charges.map(c => ({ ...c, accepted: true })));
+      setShowDraftReview(true);
+      setShowIntakeForm(false);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Approve drafts mutation
+  const approveDraftsMutation = useMutation({
+    mutationFn: async () => {
+      const accepted = drafts.filter(d => d.accepted);
+      const catCounts: Record<string, number> = {};
+      for (const d of accepted) {
+        const sortOrder = catCounts[d.category] || 0;
+        catCounts[d.category] = sortOrder + 1;
+        await addChargeItem(operatorId, d.category, d.statement, d.chargeLevel, sortOrder);
+      }
+      // Set priority ranks after all items created
+      const freshItems = await getChargeItems(operatorId);
+      for (const d of accepted) {
+        if (d.priorityRank) {
+          const match = freshItems.find(i => i.statement === d.statement && i.category === d.category);
+          if (match) await updateChargeItem(match.id, { priority_rank: d.priorityRank });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["charge_items", operatorId] });
+      setShowDraftReview(false);
+      setDrafts([]);
+      toast({ title: "Charges approved", description: "AI-generated charges have been added to the inventory." });
+    },
+  });
+
   const priorityItems = items.filter(i => i.priority_rank !== null).sort((a, b) => (a.priority_rank || 0) - (b.priority_rank || 0));
   const grouped = CHARGE_CATEGORIES.map(cat => ({
     ...cat,
