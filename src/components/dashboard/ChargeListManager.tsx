@@ -343,6 +343,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
           </div>
         )}
 
+        {!showDraftReview && (<>
         {/* Add new charge */}
         <div className="mb-4 p-3 bg-background rounded-sm border border-gunmetal">
           <div className="flex gap-2 mb-2">
