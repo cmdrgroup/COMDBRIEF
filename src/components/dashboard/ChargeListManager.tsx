@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, X, Star, MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, X, Star, MessageSquare, ChevronDown, ChevronRight, Sparkles, Loader2, Check, XCircle } from "lucide-react";
 import { CHARGE_CATEGORIES, getChargeItems, addChargeItem, deleteChargeItem, updateChargeItem, type ChargeItem } from "@/lib/chargeItems";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+type DraftCharge = {
+  category: string;
+  statement: string;
+  chargeLevel: number;
+  inferred: boolean;
+  priorityRank?: number;
+  accepted: boolean;
+};
 
 interface ChargeListManagerProps {
   operatorId: string;
@@ -18,6 +28,10 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [showIntakeForm, setShowIntakeForm] = useState(false);
+  const [intakeText, setIntakeText] = useState("");
+  const [drafts, setDrafts] = useState<DraftCharge[]>([]);
+  const [showDraftReview, setShowDraftReview] = useState(false);
 
   const { data: items = [] } = useQuery({
     queryKey: ["charge_items", operatorId],
@@ -56,6 +70,63 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   const updateMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof updateChargeItem>[1] }) => updateChargeItem(id, updates),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["charge_items", operatorId] }),
+  });
+
+  // AI generation mutation
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      // Parse intake text as key-value pairs or raw text
+      let intakeData: Record<string, string>;
+      try {
+        intakeData = JSON.parse(intakeText);
+      } catch {
+        // Treat as free-text intake
+        intakeData = { raw_intake: intakeText };
+      }
+
+      const { data, error } = await supabase.functions.invoke("generate-charges", {
+        body: { intakeData, operatorName },
+      });
+
+      if (error) throw new Error(error.message || "Failed to generate charges");
+      if (data?.error) throw new Error(data.error);
+      return data as { charges: DraftCharge[] };
+    },
+    onSuccess: (data) => {
+      setDrafts(data.charges.map(c => ({ ...c, accepted: true })));
+      setShowDraftReview(true);
+      setShowIntakeForm(false);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Approve drafts mutation
+  const approveDraftsMutation = useMutation({
+    mutationFn: async () => {
+      const accepted = drafts.filter(d => d.accepted);
+      const catCounts: Record<string, number> = {};
+      for (const d of accepted) {
+        const sortOrder = catCounts[d.category] || 0;
+        catCounts[d.category] = sortOrder + 1;
+        await addChargeItem(operatorId, d.category, d.statement, d.chargeLevel, sortOrder);
+      }
+      // Set priority ranks after all items created
+      const freshItems = await getChargeItems(operatorId);
+      for (const d of accepted) {
+        if (d.priorityRank) {
+          const match = freshItems.find(i => i.statement === d.statement && i.category === d.category);
+          if (match) await updateChargeItem(match.id, { priority_rank: d.priorityRank });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["charge_items", operatorId] });
+      setShowDraftReview(false);
+      setDrafts([]);
+      toast({ title: "Charges approved", description: "AI-generated charges have been added to the inventory." });
+    },
   });
 
   const priorityItems = items.filter(i => i.priority_rank !== null).sort((a, b) => (a.priority_rank || 0) - (b.priority_rank || 0));
@@ -118,8 +189,148 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
           </button>
         </div>
 
+        {/* AI Generate Button */}
+        {!showDraftReview && (
+          <div className="mb-4 flex gap-2">
+            <button
+              onClick={() => setShowIntakeForm(!showIntakeForm)}
+              className="flex items-center gap-2 px-3 py-2 bg-accent/20 border border-accent/30 text-accent rounded-sm hover:bg-accent/30 transition-colors font-heading text-xs uppercase tracking-widest"
+            >
+              <Sparkles className="w-4 h-4" />
+              Generate from Intake
+            </button>
+          </div>
+        )}
+
+        {/* Intake Data Form */}
+        {showIntakeForm && !showDraftReview && (
+          <div className="mb-4 p-4 bg-background rounded-sm border border-accent/30 space-y-3">
+            <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">Paste Intake Form Data</h4>
+            <p className="text-xs text-slate-grey">Paste the operator's intake form answers below. Can be JSON or free-text.</p>
+            <textarea
+              value={intakeText}
+              onChange={e => setIntakeText(e.target.value)}
+              placeholder={`{\n  "biggest_challenge": "Scaling my business past $500k",\n  "stress_level": "8/10",\n  "what_keeps_you_up": "Fear of going broke"\n}\n\nOr paste free-text intake notes...`}
+              className="w-full h-40 bg-tactical-steel border border-gunmetal rounded-sm px-3 py-2 text-sm text-steel-white font-mono focus:outline-none focus:border-accent resize-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => generateMutation.mutate()}
+                disabled={!intakeText.trim() || generateMutation.isPending}
+                className="flex items-center gap-2 px-4 py-2 bg-accent text-background font-heading text-xs uppercase tracking-widest rounded-sm hover:bg-accent/90 disabled:opacity-50 transition-colors"
+              >
+                {generateMutation.isPending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Generate Charges</>
+                )}
+              </button>
+              <button
+                onClick={() => setShowIntakeForm(false)}
+                className="px-4 py-2 text-xs text-slate-grey hover:text-steel-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Draft Review Panel */}
+        {showDraftReview && (
+          <div className="mb-4 flex-1 overflow-y-auto">
+            <div className="p-4 bg-background rounded-sm border border-accent/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">
+                  Review AI-Generated Charges ({drafts.filter(d => d.accepted).length}/{drafts.length} selected)
+                </h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setDrafts(drafts.map(d => ({ ...d, accepted: true })))}
+                    className="font-mono text-[10px] text-command-gold hover:text-steel-white"
+                  >Select All</button>
+                  <button
+                    onClick={() => setDrafts(drafts.map(d => ({ ...d, accepted: false })))}
+                    className="font-mono text-[10px] text-slate-grey hover:text-steel-white"
+                  >Deselect All</button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-grey">Review and toggle charges before approving. Deselect any you don't want.</p>
+
+              {CHARGE_CATEGORIES.map(cat => {
+                const catDrafts = drafts.filter(d => d.category === cat.key);
+                if (catDrafts.length === 0) return null;
+                return (
+                  <div key={cat.key} className="border border-gunmetal/30 rounded-sm">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-tactical-steel/30">
+                      <span className="text-sm">{cat.emoji}</span>
+                      <span className="font-heading text-xs uppercase tracking-wider text-steel-white">{cat.label}</span>
+                      <span className="font-mono text-[10px] text-slate-grey">({catDrafts.length})</span>
+                    </div>
+                    <div className="px-3 py-2 space-y-1.5">
+                      {catDrafts.map((draft, idx) => {
+                        const globalIdx = drafts.indexOf(draft);
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex items-start gap-2 p-2 rounded-sm border transition-colors ${
+                              draft.accepted ? "border-accent/30 bg-accent/5" : "border-gunmetal/20 bg-background opacity-50"
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                const newDrafts = [...drafts];
+                                newDrafts[globalIdx] = { ...draft, accepted: !draft.accepted };
+                                setDrafts(newDrafts);
+                              }}
+                              className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-sm border flex items-center justify-center transition-colors ${
+                                draft.accepted ? "bg-accent border-accent text-background" : "border-gunmetal"
+                              }`}
+                            >
+                              {draft.accepted && <Check className="w-3 h-3" />}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-steel-white/90">{draft.statement}</p>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="font-mono text-[10px] text-command-gold">Level: {draft.chargeLevel}/10</span>
+                                {draft.inferred && <span className="font-mono text-[10px] text-slate-grey italic">inferred</span>}
+                                {draft.priorityRank && (
+                                  <span className="font-mono text-[10px] text-warning-red font-bold">BIG #{draft.priorityRank}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => approveDraftsMutation.mutate()}
+                  disabled={drafts.filter(d => d.accepted).length === 0 || approveDraftsMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-command-gold text-background font-heading text-xs uppercase tracking-widest rounded-sm hover:bg-command-gold/90 disabled:opacity-50 transition-colors"
+                >
+                  {approveDraftsMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Approving...</>
+                  ) : (
+                    <><Check className="w-4 h-4" /> Approve {drafts.filter(d => d.accepted).length} Charges</>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setShowDraftReview(false); setDrafts([]); }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-slate-grey hover:text-steel-white font-heading text-xs uppercase tracking-widest transition-colors"
+                >
+                  <XCircle className="w-4 h-4" /> Discard All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Priority Clearing Targets */}
-        {priorityItems.length > 0 && (
+        {!showDraftReview && priorityItems.length > 0 && (
           <div className="mb-4 p-3 border-l-2 border-warning-red bg-warning-red/5 rounded-sm">
             <h4 className="font-mono text-[10px] uppercase tracking-widest text-warning-red mb-2">Priority Clearing Targets</h4>
             {priorityItems.map(item => (
@@ -132,6 +343,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
           </div>
         )}
 
+        {!showDraftReview && (<>
         {/* Add new charge */}
         <div className="mb-4 p-3 bg-background rounded-sm border border-gunmetal">
           <div className="flex gap-2 mb-2">
@@ -281,6 +493,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
             })}
           </div>
         </div>
+        </>)}
       </div>
     </div>
   );

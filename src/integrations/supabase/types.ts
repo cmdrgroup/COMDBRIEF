@@ -119,6 +119,7 @@ export type Database = {
           enrolled_at: string
           first_name: string
           id: string
+          intake_data: Json | null
           last_active_at: string | null
           last_name: string
           signature_name: string | null
@@ -152,6 +153,7 @@ export type Database = {
           enrolled_at?: string
           first_name: string
           id?: string
+          intake_data?: Json | null
           last_active_at?: string | null
           last_name: string
           signature_name?: string | null
@@ -185,6 +187,7 @@ export type Database = {
           enrolled_at?: string
           first_name?: string
           id?: string
+          intake_data?: Json | null
           last_active_at?: string | null
           last_name?: string
           signature_name?: string | null
