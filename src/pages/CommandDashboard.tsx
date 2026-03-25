@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut } from "lucide-react";
+import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, ListChecks } from "lucide-react";
 import { getAllOperators, createOperator, getCompletedCount, getCurrentStep, type Operator } from "@/lib/operators";
 import { STEP_NAMES } from "@/data/onboardingContent";
 import { supabase } from "@/integrations/supabase/client";
+import ChargeListManager from "@/components/dashboard/ChargeListManager";
 
 const CommandDashboard = () => {
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [chargeOperator, setChargeOperator] = useState<Operator | null>(null);
   const [newFirst, setNewFirst] = useState("");
   const [newLast, setNewLast] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -163,13 +165,13 @@ const CommandDashboard = () => {
                       <td className="py-3 px-3">{statusBadge(op.status)}</td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-1.5 bg-gunmetal rounded-full overflow-hidden">
+                            <div className="w-20 h-1.5 bg-gunmetal rounded-full overflow-hidden">
                             <div
                               className="h-full bg-command-gold rounded-full transition-all"
-                              style={{ width: `${(completedCount / 9) * 100}%` }}
+                              style={{ width: `${(completedCount / 10) * 100}%` }}
                             />
                           </div>
-                          <span className="font-mono text-[10px] text-slate-grey">{completedCount}/9</span>
+                          <span className="font-mono text-[10px] text-slate-grey">{completedCount}/10</span>
                         </div>
                       </td>
                       <td className="py-3 px-3 font-mono text-xs text-slate-grey">
@@ -181,6 +183,9 @@ const CommandDashboard = () => {
                         <div className="flex items-center gap-2">
                           <button onClick={() => setSelectedOperator(op)} className="p-1.5 hover:bg-gunmetal rounded-sm transition-colors" title="View Details">
                             <Eye className="w-3.5 h-3.5 text-slate-grey" />
+                          </button>
+                          <button onClick={() => setChargeOperator(op)} className="p-1.5 hover:bg-gunmetal rounded-sm transition-colors" title="Manage Charges">
+                            <ListChecks className="w-3.5 h-3.5 text-slate-grey" />
                           </button>
                           <button onClick={() => copyLink(op.slug, op.id)} className="p-1.5 hover:bg-gunmetal rounded-sm transition-colors" title="Copy Link">
                             {copiedId === op.id ? <Check className="w-3.5 h-3.5 text-field-green" /> : <Copy className="w-3.5 h-3.5 text-slate-grey" />}
@@ -233,6 +238,13 @@ const CommandDashboard = () => {
               )}
             </div>
           </div>
+        )}
+        {chargeOperator && (
+          <ChargeListManager
+            operatorId={chargeOperator.id}
+            operatorName={`${chargeOperator.first_name} ${chargeOperator.last_name}`}
+            onClose={() => setChargeOperator(null)}
+          />
         )}
       </div>
       <div className="noise-overlay" />
