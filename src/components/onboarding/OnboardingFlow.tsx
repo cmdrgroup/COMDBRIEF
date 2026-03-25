@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import StepProgress from "./StepProgress";
 import WelcomeStep from "./steps/WelcomeStep";
 import MissionDirectiveStep from "./steps/MissionDirectiveStep";
@@ -30,7 +30,19 @@ const OnboardingFlow = ({
 }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [completedSteps, setCompletedSteps] = useState(initialCompleted);
-  const [showCompletion, setShowCompletion] = useState(false);
+  const allComplete = initialCompleted.every(Boolean);
+  const [showCompletion, setShowCompletion] = useState(allComplete);
+
+  // Warn before closing if onboarding is in progress
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!showCompletion && completedSteps.some(Boolean) && !completedSteps.every(Boolean)) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [showCompletion, completedSteps]);
 
   const handleAcknowledge = useCallback(
     (step: number) => {
