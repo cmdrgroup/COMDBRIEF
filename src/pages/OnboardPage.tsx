@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOperatorBySlug, updateOperatorStep, getCompletedSteps, getCurrentStep } from "@/lib/operators";
 import { supabase } from "@/integrations/supabase/client";
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
+import OperatorDashboard from "@/components/operator/OperatorDashboard";
 
 const OnboardPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -56,14 +57,22 @@ const OnboardPage = () => {
     );
   }
 
+  // If onboarding is complete, show the operator dashboard
+  const completedSteps = getCompletedSteps(operator);
+  const allComplete = completedSteps.every(Boolean);
+
+  if (allComplete) {
+    return <OperatorDashboard operator={operator} />;
+  }
+
   return (
     <OnboardingFlow
       operatorName={`${operator.first_name} ${operator.last_name}`}
       operatorId={operator.id}
       initialStep={getCurrentStep(operator)}
-      initialCompleted={getCompletedSteps(operator)}
+      initialCompleted={completedSteps}
       onStepComplete={(step) => stepMutation.mutate({ step })}
-      onSignature={(name) => stepMutation.mutate({ step: 8, signatureName: name })}
+      onSignature={(name) => stepMutation.mutate({ step: 9, signatureName: name })}
     />
   );
 };

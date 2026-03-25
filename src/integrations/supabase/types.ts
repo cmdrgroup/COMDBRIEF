@@ -17,40 +17,94 @@ export type Database = {
       charge_items: {
         Row: {
           category: string
-          cleared_at: string | null
-          content: string
+          charge_level: number
+          command_notes: string | null
           created_at: string
+          current_charge_level: number | null
           id: string
-          is_cleared: boolean
           operator_id: string
+          priority_rank: number | null
           sort_order: number
+          statement: string
+          status: Database["public"]["Enums"]["charge_status"]
           updated_at: string
         }
         Insert: {
           category: string
-          cleared_at?: string | null
-          content: string
+          charge_level?: number
+          command_notes?: string | null
           created_at?: string
+          current_charge_level?: number | null
           id?: string
-          is_cleared?: boolean
           operator_id: string
+          priority_rank?: number | null
           sort_order?: number
+          statement: string
+          status?: Database["public"]["Enums"]["charge_status"]
           updated_at?: string
         }
         Update: {
           category?: string
-          cleared_at?: string | null
-          content?: string
+          charge_level?: number
+          command_notes?: string | null
           created_at?: string
+          current_charge_level?: number | null
           id?: string
-          is_cleared?: boolean
           operator_id?: string
+          priority_rank?: number | null
           sort_order?: number
+          statement?: string
+          status?: Database["public"]["Enums"]["charge_status"]
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "charge_items_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clearing_logs: {
+        Row: {
+          charge_id: string
+          id: string
+          logged_at: string
+          operator_id: string
+          operator_notes: string | null
+          post_clearing_level: number
+          pre_clearing_level: number
+        }
+        Insert: {
+          charge_id: string
+          id?: string
+          logged_at?: string
+          operator_id: string
+          operator_notes?: string | null
+          post_clearing_level: number
+          pre_clearing_level: number
+        }
+        Update: {
+          charge_id?: string
+          id?: string
+          logged_at?: string
+          operator_id?: string
+          operator_notes?: string | null
+          post_clearing_level?: number
+          pre_clearing_level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clearing_logs_charge_id_fkey"
+            columns: ["charge_id"]
+            isOneToOne: false
+            referencedRelation: "charge_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clearing_logs_operator_id_fkey"
             columns: ["operator_id"]
             isOneToOne: false
             referencedRelation: "operators"
@@ -160,6 +214,62 @@ export type Database = {
         }
         Relationships: []
       }
+      roadmap_items: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          item_type: Database["public"]["Enums"]["roadmap_item_type"]
+          operator_id: string
+          phase: Database["public"]["Enums"]["roadmap_phase"]
+          sort_order: number
+          target_week: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["roadmap_item_type"]
+          operator_id: string
+          phase: Database["public"]["Enums"]["roadmap_phase"]
+          sort_order?: number
+          target_week?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["roadmap_item_type"]
+          operator_id?: string
+          phase?: Database["public"]["Enums"]["roadmap_phase"]
+          sort_order?: number
+          target_week?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_items_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -178,6 +288,50 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_focus: {
+        Row: {
+          command_briefing_datetime: string | null
+          created_at: string
+          headline: string
+          id: string
+          operator_id: string
+          priority_action_ids: string[] | null
+          priority_charge_ids: string[] | null
+          updated_at: string
+          week_number: number
+        }
+        Insert: {
+          command_briefing_datetime?: string | null
+          created_at?: string
+          headline: string
+          id?: string
+          operator_id: string
+          priority_action_ids?: string[] | null
+          priority_charge_ids?: string[] | null
+          updated_at?: string
+          week_number: number
+        }
+        Update: {
+          command_briefing_datetime?: string | null
+          created_at?: string
+          headline?: string
+          id?: string
+          operator_id?: string
+          priority_action_ids?: string[] | null
+          priority_charge_ids?: string[] | null
+          updated_at?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_focus_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -193,6 +347,9 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      charge_status: "not_started" | "in_progress" | "cleared"
+      roadmap_item_type: "standard" | "personalised"
+      roadmap_phase: "phase_1" | "phase_2" | "phase_3" | "phase_4"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -321,6 +478,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      charge_status: ["not_started", "in_progress", "cleared"],
+      roadmap_item_type: ["standard", "personalised"],
+      roadmap_phase: ["phase_1", "phase_2", "phase_3", "phase_4"],
     },
   },
 } as const
