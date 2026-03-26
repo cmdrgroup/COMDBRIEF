@@ -153,11 +153,75 @@ serve(async (req) => {
       }
     }
 
+    // Auto-load default roadmap template
+    let roadmapLoaded = false;
+    try {
+      // Check if roadmap items already exist
+      const { data: existingItems } = await supabase
+        .from("roadmap_items")
+        .select("id")
+        .eq("operator_id", operatorId)
+        .limit(1);
+
+      if (!existingItems || existingItems.length === 0) {
+        const defaultItems = [
+          { phase: "phase_1", title: "Complete Pre-Deployment Manual Review", description: "Read and acknowledge all onboarding materials", icon: "📋", target_week: 1 },
+          { phase: "phase_1", title: "Complete Mind Clearing Inventory Review", description: "Review all charges with Command during deployment call", icon: "🧠", target_week: 1 },
+          { phase: "phase_1", title: "Install Morning Battle Rhythm", description: "Begin daily 05:00 wake + morning protocol", icon: "⏰", target_week: 1 },
+          { phase: "phase_1", title: "Submit First SITREP", description: "Complete and submit first daily situation report", icon: "📝", target_week: 1 },
+          { phase: "phase_1", title: "Complete Time Audit", description: "Track all time for 7 days, identify leakage points", icon: "⏱️", target_week: 2 },
+          { phase: "phase_1", title: "First Clearing Session (BIG #1)", description: "Conduct first dedicated clearing operation on primary charge", icon: "🎯", target_week: 2 },
+          { phase: "phase_1", title: "Define 90-Day Strategic Objectives", description: "Lock in 3–5 measurable objectives for the Passage", icon: "🗺️", target_week: 3 },
+          { phase: "phase_1", title: "Establish KPI Dashboard", description: "Define and begin tracking 5 core business metrics", icon: "📊", target_week: 3 },
+          { phase: "phase_1", title: "Complete Command Foundations Assessment", description: "Self-assessment across all 5 Command Centers", icon: "🏛️", target_week: 4 },
+          { phase: "phase_2", title: "Strategic Positioning Analysis", description: "Analyse current market position and competitive landscape", icon: "🔍", target_week: 5 },
+          { phase: "phase_2", title: "Mission Targeting Workshop", description: "Define ideal client avatar and value proposition", icon: "🎯", target_week: 6 },
+          { phase: "phase_2", title: "Delegation Audit", description: "Map all tasks, identify delegation opportunities", icon: "👥", target_week: 6 },
+          { phase: "phase_2", title: "Revenue Architecture Review", description: "Analyse revenue streams, identify strategic focus areas", icon: "💰", target_week: 7 },
+          { phase: "phase_2", title: "Strategic Command Positioning", description: "Define your role as strategic leader vs tactical operator", icon: "🏗️", target_week: 8 },
+          { phase: "phase_3", title: "Time Command Implementation", description: "Restructure calendar around strategic priorities", icon: "⏰", target_week: 9 },
+          { phase: "phase_3", title: "Fear & Edge Operations", description: "Execute on identified fear-based charges with clearing protocols", icon: "⚔️", target_week: 10 },
+          { phase: "phase_3", title: "Environment Audit & Optimization", description: "Audit physical, digital, and relational environments", icon: "🏠", target_week: 10 },
+          { phase: "phase_3", title: "90-Day Review & Recalibration", description: "Review progress against objectives, adjust tactical approach", icon: "📊", target_week: 11 },
+          { phase: "phase_4", title: "Pre-Passage Integration", description: "Consolidate all learnings and systems before Passage completion", icon: "🔄", target_week: 12 },
+          { phase: "phase_4", title: "Advanced Command Deployment", description: "Implement advanced leadership frameworks", icon: "⭐", target_week: 12 },
+          { phase: "phase_4", title: "Post-Passage Transition Plan", description: "Define ongoing rhythm and accountability structure", icon: "🚀", target_week: 12 },
+        ];
+
+        const roadmapRows = defaultItems.map((item, i) => ({
+          operator_id: operatorId,
+          phase: item.phase,
+          item_type: "standard",
+          title: item.title,
+          description: item.description,
+          icon: item.icon,
+          target_week: item.target_week,
+          sort_order: i,
+        }));
+
+        const { error: roadmapError } = await supabase
+          .from("roadmap_items")
+          .insert(roadmapRows);
+
+        if (roadmapError) {
+          console.error("Error inserting roadmap:", roadmapError);
+        } else {
+          roadmapLoaded = true;
+          console.log(`Loaded ${roadmapRows.length} roadmap items for operator ${operatorId}`);
+        }
+      } else {
+        console.log("Roadmap already exists, skipping template load");
+      }
+    } catch (roadmapErr) {
+      console.error("Roadmap loading error:", roadmapErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         operator_id: operatorId,
         charges_generated: chargesGenerated,
+        roadmap_loaded: roadmapLoaded,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
