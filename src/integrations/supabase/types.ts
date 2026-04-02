@@ -16,43 +16,64 @@ export type Database = {
     Tables: {
       charge_items: {
         Row: {
+          blind_spot_question: string | null
           category: string
           charge_level: number
+          cleared_at: string | null
           command_notes: string | null
           created_at: string
           current_charge_level: number | null
+          domain: string | null
+          evidence: string | null
           id: string
+          is_cleared: boolean | null
           operator_id: string
           priority_rank: number | null
+          review_rating: number | null
           sort_order: number
+          source: string | null
           statement: string
           status: Database["public"]["Enums"]["charge_status"]
           updated_at: string
         }
         Insert: {
+          blind_spot_question?: string | null
           category: string
           charge_level?: number
+          cleared_at?: string | null
           command_notes?: string | null
           created_at?: string
           current_charge_level?: number | null
+          domain?: string | null
+          evidence?: string | null
           id?: string
+          is_cleared?: boolean | null
           operator_id: string
           priority_rank?: number | null
+          review_rating?: number | null
           sort_order?: number
+          source?: string | null
           statement: string
           status?: Database["public"]["Enums"]["charge_status"]
           updated_at?: string
         }
         Update: {
+          blind_spot_question?: string | null
           category?: string
           charge_level?: number
+          cleared_at?: string | null
           command_notes?: string | null
           created_at?: string
           current_charge_level?: number | null
+          domain?: string | null
+          evidence?: string | null
           id?: string
+          is_cleared?: boolean | null
           operator_id?: string
           priority_rank?: number | null
+          review_rating?: number | null
           sort_order?: number
+          source?: string | null
           statement?: string
           status?: Database["public"]["Enums"]["charge_status"]
           updated_at?: string
