@@ -7,10 +7,10 @@ export type RoadmapItemType = Database["public"]["Enums"]["roadmap_item_type"];
 export type WeeklyFocus = Database["public"]["Tables"]["weekly_focus"]["Row"];
 
 export const PHASE_INFO = [
-  { key: "phase_1" as const, label: "COMMAND INSTALLATION", weeks: "Weeks 1–3", number: 1 },
-  { key: "phase_2" as const, label: "CLEARING OPERATIONS", weeks: "Weeks 4–6", number: 2 },
-  { key: "phase_3" as const, label: "EDGE & INTEGRATION", weeks: "Weeks 7–9", number: 3 },
-  { key: "phase_4" as const, label: "PASSAGE READY", weeks: "Weeks 10–12", number: 4 },
+  { key: "phase_1" as const, label: "COMMAND INSTALLATION", weeks: "Weeks 1–4", number: 1 },
+  { key: "phase_2" as const, label: "CLEARING OPERATIONS", weeks: "Weeks 5–8", number: 2 },
+  { key: "phase_3" as const, label: "EDGE & INTEGRATION", weeks: "Weeks 9–11", number: 3 },
+  { key: "phase_4" as const, label: "DEPLOYMENT", weeks: "Week 12", number: 4 },
 ];
 
 export const DEFAULT_ROADMAP_ITEMS: Array<{
