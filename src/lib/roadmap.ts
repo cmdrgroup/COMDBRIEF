@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+export { DEFAULT_ROADMAP_ITEMS } from "@/lib/roadmapTemplate";
 
 export type RoadmapItem = Database["public"]["Tables"]["roadmap_items"]["Row"];
 export type RoadmapPhase = Database["public"]["Enums"]["roadmap_phase"];
