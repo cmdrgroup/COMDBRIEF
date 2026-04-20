@@ -58,8 +58,12 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
   };
 
   const handleStatusCycle = async (item: ChargeItem) => {
-    const next = item.status === "not_started" ? "in_progress" : item.status === "in_progress" ? "cleared" : "not_started";
-    await updateChargeItem(item.id, { status: next as any });
+    if (item.status === "cleared") return;
+    const next = item.status === "not_started" ? "in_progress" : "cleared";
+    await updateChargeItem(item.id, {
+      status: next as any,
+      ...(next === "cleared" ? { is_cleared: true, cleared_at: new Date().toISOString() } : {}),
+    });
     queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
   };
 
