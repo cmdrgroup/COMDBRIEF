@@ -50,7 +50,7 @@ export async function updateOperatorStep(operatorId: string, stepNumber: number,
 
   const { error } = await supabase
     .from("operators")
-    .update(updates)
+    .update(updates as any)
     .eq("id", operatorId);
   if (error) throw error;
 }
