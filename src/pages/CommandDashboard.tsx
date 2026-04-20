@@ -20,6 +20,9 @@ const CommandDashboard = () => {
   const [newLast, setNewLast] = useState("");
   const [newEmail, setNewEmail] = useState("");
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const canSubmit = newFirst.trim().length > 0 && newLast.trim().length > 0 && isValidEmail(newEmail);
+
   const { data: operators = [], isLoading } = useQuery({
     queryKey: ["operators"],
     queryFn: getAllOperators,
@@ -146,11 +149,23 @@ const CommandDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input value={newFirst} onChange={(e) => setNewFirst(e.target.value)} placeholder="First Name" className="bg-background border border-gunmetal rounded-sm px-3 py-2 text-sm text-steel-white focus:outline-none focus:border-command-gold" />
                 <input value={newLast} onChange={(e) => setNewLast(e.target.value)} placeholder="Last Name" className="bg-background border border-gunmetal rounded-sm px-3 py-2 text-sm text-steel-white focus:outline-none focus:border-command-gold" />
-                <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className="bg-background border border-gunmetal rounded-sm px-3 py-2 text-sm text-steel-white focus:outline-none focus:border-command-gold" />
+                <div className="flex flex-col">
+                  <input
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Email"
+                    className={`bg-background border rounded-sm px-3 py-2 text-sm text-steel-white focus:outline-none focus:border-command-gold ${
+                      newEmail && !isValidEmail(newEmail) ? "border-warning-red" : "border-gunmetal"
+                    }`}
+                  />
+                  {newEmail && !isValidEmail(newEmail) && (
+                    <span className="text-warning-red text-xs mt-1">Invalid email format</span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => createMutation.mutate()}
-                disabled={!newFirst || !newLast || !newEmail || createMutation.isPending}
+                disabled={!canSubmit || createMutation.isPending}
                 className="mt-4 px-6 py-2 bg-command-gold text-background font-heading text-xs uppercase tracking-widest hover:bg-command-gold/90 transition-colors rounded-sm disabled:opacity-50"
               >
                 {createMutation.isPending ? "Creating..." : "Generate Link"}
