@@ -120,16 +120,21 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
         {activeSection === "charges" && (
           <div className="space-y-6">
             {/* Launch Clearing Room */}
-            <a
-              href="https://clearing.cmdrgroup.com/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                  alert("Your session has expired. Please log in again.");
+                  return;
+                }
+                const url = `https://clearing.cmdrgroup.com/auth#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+                window.open(url, "_blank", "noopener,noreferrer");
+              }}
               className="block w-full px-4 py-3 text-center font-heading text-sm uppercase tracking-[0.2em] font-bold bg-command-gold text-background hover:bg-command-gold/90 transition-colors rounded-sm"
             >
               🚀 Launch Clearing Room →
-            </a>
+            </button>
 
-            {/* Priority Targets */}
             {/* Priority Targets */}
             {priorityItems.length > 0 && (
               <div className="border-l-2 border-warning-red p-4 bg-warning-red/5 rounded-sm">
