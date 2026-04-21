@@ -65,6 +65,10 @@ const OnboardingFlow = ({
     }
   }, [currentStep]);
 
+  const handleBack = useCallback(() => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  }, [currentStep]);
+
   const handleSignature = useCallback(
     (name: string) => {
       handleAcknowledge(TOTAL_STEPS - 1);
@@ -105,7 +109,19 @@ const OnboardingFlow = ({
       <div className="classified-strip">
         ⬛ CLASSIFIED — CMDR GROUP — PRE-DEPLOYMENT PROTOCOL
       </div>
-      <StepProgress currentStep={currentStep} completedSteps={completedSteps} />
+      <div className="flex items-center gap-3 px-6 pt-3">
+        {currentStep > 0 && (
+          <button
+            onClick={handleBack}
+            className="font-heading text-[10px] uppercase tracking-widest text-slate-grey hover:text-command-gold transition-colors px-2 py-1 border border-gunmetal rounded-sm"
+          >
+            ← Back
+          </button>
+        )}
+        <div className="flex-1">
+          <StepProgress currentStep={currentStep} completedSteps={completedSteps} />
+        </div>
+      </div>
       <div className="flex-1 overflow-hidden">
         {renderStep()}
       </div>
