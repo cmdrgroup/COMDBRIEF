@@ -124,7 +124,7 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
               onClick={async () => {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
-                  const url = `https://mindclearingdrill.lovable.app/auth#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+                  const url = `https://mindclearingdrill.lovable.app/auth?access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
                   window.open(url, '_blank');
                 } else {
                   window.open('https://mindclearingdrill.lovable.app/auth', '_blank');
