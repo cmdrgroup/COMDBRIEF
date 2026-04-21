@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { CHARGE_CATEGORIES, ChargeItem, DOMAIN_LABELS, SOURCE_LABELS } from "@/lib/chargeItems";
+import ChargeRatingSlider from "./ChargeRatingSlider";
 
 interface FullInventoryScreenProps {
   items: ChargeItem[];
@@ -91,15 +92,11 @@ const FullInventoryScreen = ({ items, onUpdateRating, onAddCharge, onContinue }:
                       )}
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-slate-grey">Rating:</span>
-                        <input
-                          type="range"
-                          min={1}
-                          max={10}
+                        <ChargeRatingSlider
                           value={item.current_charge_level ?? item.charge_level}
-                          onChange={e => onUpdateRating(item.id, Number(e.target.value))}
-                          className="flex-1 accent-command-gold"
+                          onCommit={v => onUpdateRating(item.id, v)}
+                          valueClassName="font-mono text-xs text-command-gold w-8 text-right"
                         />
-                        <span className="font-mono text-xs text-command-gold w-4">{item.current_charge_level ?? item.charge_level}</span>
                       </div>
                     </div>
                   );
