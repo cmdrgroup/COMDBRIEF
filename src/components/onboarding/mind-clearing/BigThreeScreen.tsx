@@ -1,4 +1,5 @@
 import { ChargeItem, DOMAIN_LABELS } from "@/lib/chargeItems";
+import ChargeRatingSlider from "./ChargeRatingSlider";
 
 interface BigThreeScreenProps {
   items: ChargeItem[];
@@ -39,17 +40,10 @@ const BigThreeScreen = ({ items, onUpdateRating, onContinue }: BigThreeScreenPro
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-grey">Your rating:</span>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
+                <ChargeRatingSlider
                   value={item.current_charge_level ?? item.charge_level}
-                  onChange={e => onUpdateRating(item.id, Number(e.target.value))}
-                  className="flex-1 accent-command-gold"
+                  onCommit={v => onUpdateRating(item.id, v)}
                 />
-                <span className="font-mono text-sm text-command-gold font-bold w-8 text-right">
-                  {item.current_charge_level ?? item.charge_level}/10
-                </span>
               </div>
             </div>
           );
