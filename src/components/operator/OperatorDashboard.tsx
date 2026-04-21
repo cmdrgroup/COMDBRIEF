@@ -165,8 +165,8 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
                       >
                         <button
                           onClick={e => { e.stopPropagation(); handleStatusCycle(item); }}
-                          disabled={item.status === "cleared"}
-                          className={`mt-0.5 text-sm flex-shrink-0 ${item.status === "cleared" ? "cursor-default" : "cursor-pointer"}`}
+                          className="mt-0.5 text-sm flex-shrink-0 cursor-pointer hover:opacity-70"
+                          title="Click to cycle status (untick by clicking again)"
                         >
                           {item.status === "cleared" ? "✅" : item.status === "in_progress" ? "🟡" : "⬜"}
                         </button>
@@ -174,6 +174,13 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
                           {item.statement}
                         </span>
                         <span className="font-mono text-[10px] text-command-gold">{item.current_charge_level ?? item.charge_level}/10</span>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDelete(item); }}
+                          className="text-slate-grey hover:text-warning-red transition-colors mt-0.5 flex-shrink-0"
+                          title="Delete charge"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                         {expandedCharge === item.id ? <ChevronDown className="w-3 h-3 text-slate-grey mt-1" /> : <ChevronRight className="w-3 h-3 text-slate-grey mt-1" />}
                       </button>
                       {expandedCharge === item.id && (
