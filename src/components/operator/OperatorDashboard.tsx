@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getChargeItems, CHARGE_CATEGORIES, updateChargeItem, addClearingLog, type ChargeItem } from "@/lib/chargeItems";
+import { getChargeItems, CHARGE_CATEGORIES, updateChargeItem, addClearingLog, deleteChargeItem, type ChargeItem } from "@/lib/chargeItems";
 import { getRoadmapItems, toggleRoadmapComplete } from "@/lib/roadmap";
 import { supabase } from "@/integrations/supabase/client";
 import RoadmapView from "../roadmap/RoadmapView";
 import { STEP_NAMES } from "@/data/onboardingContent";
 import type { Operator } from "@/lib/operators";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Trash2 } from "lucide-react";
 
 interface OperatorDashboardProps {
   operator: Operator;
@@ -58,12 +58,22 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
   };
 
   const handleStatusCycle = async (item: ChargeItem) => {
-    if (item.status === "cleared") return;
-    const next = item.status === "not_started" ? "in_progress" : "cleared";
+    // Cycle: not_started → in_progress → cleared → not_started
+    const next =
+      item.status === "not_started" ? "in_progress" :
+      item.status === "in_progress" ? "cleared" : "not_started";
     await updateChargeItem(item.id, {
       status: next as any,
-      ...(next === "cleared" ? { is_cleared: true, cleared_at: new Date().toISOString() } : {}),
+      ...(next === "cleared"
+        ? { is_cleared: true, cleared_at: new Date().toISOString() }
+        : { is_cleared: false, cleared_at: null }),
     });
+    queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
+  };
+
+  const handleDelete = async (item: ChargeItem) => {
+    if (!confirm(`Delete this charge?\n\n"${item.statement}"`)) return;
+    await deleteChargeItem(item.id);
     queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
   };
 
