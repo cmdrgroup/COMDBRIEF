@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import RoadmapView from "../roadmap/RoadmapView";
 import { STEP_NAMES } from "@/data/onboardingContent";
 import type { Operator } from "@/lib/operators";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 interface OperatorDashboardProps {
   operator: Operator;
@@ -119,6 +119,7 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
               🚀 Launch Clearing Room →
             </a>
 
+            {/* Priority Targets */}
             {/* Priority Targets */}
             {priorityItems.length > 0 && (
               <div className="border-l-2 border-warning-red p-4 bg-warning-red/5 rounded-sm">
