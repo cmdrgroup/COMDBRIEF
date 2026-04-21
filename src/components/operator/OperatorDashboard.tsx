@@ -120,17 +120,11 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
         {activeSection === "charges" && (
           <div className="space-y-6">
             {/* Launch Clearing Room */}
-            <button
-              onClick={async () => {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                  const url = `https://mindclearingdrill.lovable.app/auth?access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
-                  window.open(url, '_blank');
-                } else {
-                  window.open('https://mindclearingdrill.lovable.app/auth', '_blank');
-                }
-              }}
-              className="w-full text-left border-l-4 border-command-gold bg-tactical-steel/60 hover:bg-tactical-steel transition-colors p-5 rounded-sm group"
+            <a
+              href="https://mindclearingdrill.lovable.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-left border-l-4 border-command-gold bg-tactical-steel/60 hover:bg-tactical-steel transition-colors p-5 rounded-sm group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
@@ -143,7 +137,7 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
                   </p>
                 </div>
               </div>
-            </button>
+            </a>
 
             {/* Priority Targets */}
             {priorityItems.length > 0 && (
