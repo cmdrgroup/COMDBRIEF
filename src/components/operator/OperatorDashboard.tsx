@@ -121,7 +121,7 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
           <div className="space-y-6">
             {/* Launch Clearing Room */}
             <a
-              href="https://clearingroom.lovable.app/auth"
+              href="https://clearing.cmdrgroup.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full px-4 py-3 text-center font-heading text-sm uppercase tracking-[0.2em] font-bold bg-command-gold text-background hover:bg-command-gold/90 transition-colors rounded-sm"
