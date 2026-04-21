@@ -123,16 +123,26 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
             <button
               onClick={async () => {
                 const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                  alert("Your session has expired. Please log in again.");
-                  return;
+                if (session) {
+                  const url = `https://clearing.cmdrgroup.com/auth#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+                  window.open(url, '_blank');
+                } else {
+                  window.open('https://clearing.cmdrgroup.com/auth', '_blank');
                 }
-                const url = `https://clearing.cmdrgroup.com/auth#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
-                window.open(url, "_blank", "noopener,noreferrer");
               }}
-              className="block w-full px-4 py-3 text-center font-heading text-sm uppercase tracking-[0.2em] font-bold bg-command-gold text-background hover:bg-command-gold/90 transition-colors rounded-sm"
+              className="w-full text-left border-l-4 border-command-gold bg-tactical-steel/60 hover:bg-tactical-steel transition-colors p-5 rounded-sm group"
             >
-              🚀 Launch Clearing Room →
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-heading text-base uppercase tracking-wider text-command-gold mb-1 flex items-center gap-2">
+                    Launch Clearing Room
+                    <ExternalLink className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                  </h3>
+                  <p className="text-sm text-steel-white/80 leading-relaxed">
+                    Begin clearing charges with the full tactical toolkit. Use the same email and access code.
+                  </p>
+                </div>
+              </div>
             </button>
 
             {/* Priority Targets */}
