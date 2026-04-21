@@ -4,10 +4,11 @@ import ChargeRatingSlider from "./ChargeRatingSlider";
 interface BigThreeScreenProps {
   items: ChargeItem[];
   onUpdateRating: (id: string, rating: number) => void;
+  onBack?: () => void;
   onContinue: () => void;
 }
 
-const BigThreeScreen = ({ items, onUpdateRating, onContinue }: BigThreeScreenProps) => {
+const BigThreeScreen = ({ items, onUpdateRating, onBack, onContinue }: BigThreeScreenProps) => {
   const bigThree = items
     .filter(i => i.priority_rank !== null)
     .sort((a, b) => (a.priority_rank || 0) - (b.priority_rank || 0))
@@ -54,12 +55,22 @@ const BigThreeScreen = ({ items, onUpdateRating, onContinue }: BigThreeScreenPro
         You'll clear these first during Phase 2. Your first clearing session is in Week 3.
       </p>
 
-      <button
-        onClick={onContinue}
-        className="w-full py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90"
-      >
-        Continue to Full Inventory
-      </button>
+      <div className="flex gap-2">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="px-4 py-3 font-heading text-xs uppercase tracking-widest border border-gunmetal text-slate-grey hover:text-steel-white hover:border-steel-white rounded-sm"
+          >
+            ← Back
+          </button>
+        )}
+        <button
+          onClick={onContinue}
+          className="flex-1 py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90"
+        >
+          Continue to Full Inventory
+        </button>
+      </div>
     </div>
   );
 };

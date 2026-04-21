@@ -2,11 +2,12 @@ import { ChargeItem } from "@/lib/chargeItems";
 
 interface SummaryScreenProps {
   items: ChargeItem[];
+  onBack?: () => void;
   onSave: () => void;
   isSaving: boolean;
 }
 
-const SummaryScreen = ({ items, onSave, isSaving }: SummaryScreenProps) => {
+const SummaryScreen = ({ items, onBack, onSave, isSaving }: SummaryScreenProps) => {
   const nonBlindSpot = items.filter(i => i.source !== "blind_spot");
   const selfAdded = nonBlindSpot.filter(i => i.source === "self_reported").length;
   const rated7Plus = nonBlindSpot.filter(i => (i.current_charge_level ?? i.charge_level) >= 7).length;
@@ -51,13 +52,24 @@ const SummaryScreen = ({ items, onSave, isSaving }: SummaryScreenProps) => {
         </div>
       </div>
 
-      <button
-        onClick={onSave}
-        disabled={isSaving}
-        className="w-full py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90 disabled:opacity-50"
-      >
-        {isSaving ? "Saving..." : "Save Inventory"}
-      </button>
+      <div className="flex gap-2">
+        {onBack && (
+          <button
+            onClick={onBack}
+            disabled={isSaving}
+            className="px-4 py-3 font-heading text-xs uppercase tracking-widest border border-gunmetal text-slate-grey hover:text-steel-white hover:border-steel-white rounded-sm disabled:opacity-50"
+          >
+            ← Back
+          </button>
+        )}
+        <button
+          onClick={onSave}
+          disabled={isSaving}
+          className="flex-1 py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90 disabled:opacity-50"
+        >
+          {isSaving ? "Saving..." : "Save Inventory"}
+        </button>
+      </div>
     </div>
   );
 };

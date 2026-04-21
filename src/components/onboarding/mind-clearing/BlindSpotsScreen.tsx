@@ -5,10 +5,11 @@ interface BlindSpotsScreenProps {
   items: ChargeItem[];
   onAddToInventory: (item: ChargeItem, statement: string, rating: number) => void;
   onDismiss: (id: string) => void;
+  onBack?: () => void;
   onContinue: () => void;
 }
 
-const BlindSpotsScreen = ({ items, onAddToInventory, onDismiss, onContinue }: BlindSpotsScreenProps) => {
+const BlindSpotsScreen = ({ items, onAddToInventory, onDismiss, onBack, onContinue }: BlindSpotsScreenProps) => {
   const blindSpots = items.filter(i => i.source === "blind_spot");
   const [responding, setResponding] = useState<string | null>(null);
   const [statement, setStatement] = useState("");
@@ -34,9 +35,16 @@ const BlindSpotsScreen = ({ items, onAddToInventory, onDismiss, onContinue }: Bl
     return (
       <div className="space-y-6 text-center">
         <p className="text-sm text-steel-white/70">No blind spot questions were generated.</p>
-        <button onClick={onContinue} className="w-full py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90">
-          Continue to Summary
-        </button>
+        <div className="flex gap-2">
+          {onBack && (
+            <button onClick={onBack} className="px-4 py-3 font-heading text-xs uppercase tracking-widest border border-gunmetal text-slate-grey hover:text-steel-white hover:border-steel-white rounded-sm">
+              ← Back
+            </button>
+          )}
+          <button onClick={onContinue} className="flex-1 py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90">
+            Continue to Summary
+          </button>
+        </div>
       </div>
     );
   }
@@ -118,12 +126,22 @@ const BlindSpotsScreen = ({ items, onAddToInventory, onDismiss, onContinue }: Bl
         })}
       </div>
 
-      <button
-        onClick={onContinue}
-        className="w-full py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90 mt-4"
-      >
-        Continue to Summary
-      </button>
+      <div className="flex gap-2 mt-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="px-4 py-3 font-heading text-xs uppercase tracking-widest border border-gunmetal text-slate-grey hover:text-steel-white hover:border-steel-white rounded-sm"
+          >
+            ← Back
+          </button>
+        )}
+        <button
+          onClick={onContinue}
+          className="flex-1 py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90"
+        >
+          Continue to Summary
+        </button>
+      </div>
     </div>
   );
 };
