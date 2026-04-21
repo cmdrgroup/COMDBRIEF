@@ -7,10 +7,11 @@ interface FullInventoryScreenProps {
   items: ChargeItem[];
   onUpdateRating: (id: string, rating: number) => void;
   onAddCharge: (category: string, statement: string, rating: number) => void;
+  onBack?: () => void;
   onContinue: () => void;
 }
 
-const FullInventoryScreen = ({ items, onUpdateRating, onAddCharge, onContinue }: FullInventoryScreenProps) => {
+const FullInventoryScreen = ({ items, onUpdateRating, onAddCharge, onBack, onContinue }: FullInventoryScreenProps) => {
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [showEvidence, setShowEvidence] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<string | null>(null);
@@ -140,12 +141,22 @@ const FullInventoryScreen = ({ items, onUpdateRating, onAddCharge, onContinue }:
         </div>
       ))}
 
-      <button
-        onClick={onContinue}
-        className="w-full py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90 mt-4"
-      >
-        Continue to Blind Spots
-      </button>
+      <div className="flex gap-2 mt-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="px-4 py-3 font-heading text-xs uppercase tracking-widest border border-gunmetal text-slate-grey hover:text-steel-white hover:border-steel-white rounded-sm"
+          >
+            ← Back
+          </button>
+        )}
+        <button
+          onClick={onContinue}
+          className="flex-1 py-3 bg-command-gold text-background font-heading text-sm uppercase tracking-widest rounded-sm hover:bg-command-gold/90"
+        >
+          Continue to Blind Spots
+        </button>
+      </div>
     </div>
   );
 };

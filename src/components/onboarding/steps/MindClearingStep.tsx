@@ -152,6 +152,7 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
         <BigThreeScreen
           items={items}
           onUpdateRating={handleUpdateRating}
+          onBack={() => setScreen("intro")}
           onContinue={() => setScreen("inventory")}
         />
       )}
@@ -160,6 +161,7 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
           items={items}
           onUpdateRating={handleUpdateRating}
           onAddCharge={handleAddCharge}
+          onBack={() => setScreen("big_three")}
           onContinue={() => setScreen("blind_spots")}
         />
       )}
@@ -168,12 +170,14 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
           items={items}
           onAddToInventory={handleBlindSpotAdd}
           onDismiss={handleBlindSpotDismiss}
+          onBack={() => setScreen("inventory")}
           onContinue={() => setScreen("summary")}
         />
       )}
       {screen === "summary" && (
         <SummaryScreen
           items={items}
+          onBack={() => setScreen("blind_spots")}
           onSave={() => {
             onAcknowledge();
             onContinue();
