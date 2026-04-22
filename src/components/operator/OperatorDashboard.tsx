@@ -16,6 +16,7 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<"charges" | "roadmap" | "onboarding">("charges");
   const [expandedCharge, setExpandedCharge] = useState<string | null>(null);
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set());
   const [clearingLevel, setClearingLevel] = useState(5);
   const [clearingNotes, setClearingNotes] = useState("");
 
@@ -154,17 +155,30 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
             )}
 
             {/* Categories */}
-            {grouped.map(group => (
+            {grouped.map(group => {
+              const isCollapsed = collapsedCats.has(group.key);
+              const clearedCount = group.items.filter(i => i.status === "cleared").length;
+              return (
               <div key={group.key} className="directive-card">
-                <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setCollapsedCats(prev => {
+                    const next = new Set(prev);
+                    if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
+                    return next;
+                  })}
+                  className="w-full flex items-center justify-between mb-3 text-left"
+                >
                   <div className="flex items-center gap-2">
+                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-slate-grey" /> : <ChevronDown className="w-4 h-4 text-slate-grey" />}
                     <span className="text-lg">{group.emoji}</span>
                     <span className="font-heading text-sm uppercase tracking-wider text-steel-white">{group.label}</span>
+                    <span className="font-mono text-[10px] text-slate-grey">({clearedCount}/{group.items.length})</span>
                   </div>
                   <div className="w-9 h-9 rounded-full bg-command-gold/20 flex items-center justify-center">
                     <span className="font-mono text-sm text-command-gold font-bold">{group.avgLevel}</span>
                   </div>
-                </div>
+                </button>
+                {!isCollapsed && (
                 <div className="space-y-2">
                   {group.items.map(item => (
                     <div key={item.id} className="bg-background rounded-sm border border-gunmetal/30">
@@ -229,8 +243,10 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
-            ))}
+              );
+            })}
 
             {charges.length === 0 && (
               <div className="directive-card text-center py-12">
