@@ -243,8 +243,10 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
-            ))}
+              );
+            })}
 
             {charges.length === 0 && (
               <div className="directive-card text-center py-12">
