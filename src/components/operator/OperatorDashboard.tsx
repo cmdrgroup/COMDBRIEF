@@ -78,6 +78,11 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
     queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
   };
 
+  const handleRemovePriority = async (item: ChargeItem) => {
+    await updateChargeItem(item.id, { priority_rank: null });
+    queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
+  };
+
   const navItems = [
     { key: "charges" as const, label: "🎯 CHARGE INVENTORY" },
     { key: "roadmap" as const, label: "🗺️ DEPLOYMENT ROADMAP" },
