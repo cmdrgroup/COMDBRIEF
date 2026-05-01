@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import RoadmapView from "../roadmap/RoadmapView";
 import { STEP_NAMES } from "@/data/onboardingContent";
 import type { Operator } from "@/lib/operators";
-import { ChevronDown, ChevronRight, ExternalLink, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Trash2, X } from "lucide-react";
 
 interface OperatorDashboardProps {
   operator: Operator;
