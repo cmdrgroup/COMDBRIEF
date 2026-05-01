@@ -1,14 +1,16 @@
+import { X } from "lucide-react";
 import { ChargeItem, DOMAIN_LABELS } from "@/lib/chargeItems";
 import ChargeRatingSlider from "./ChargeRatingSlider";
 
 interface BigThreeScreenProps {
   items: ChargeItem[];
   onUpdateRating: (id: string, rating: number) => void;
+  onRemovePriority?: (id: string) => void;
   onBack?: () => void;
   onContinue: () => void;
 }
 
-const BigThreeScreen = ({ items, onUpdateRating, onBack, onContinue }: BigThreeScreenProps) => {
+const BigThreeScreen = ({ items, onUpdateRating, onRemovePriority, onBack, onContinue }: BigThreeScreenProps) => {
   const bigThree = items
     .filter(i => i.priority_rank !== null)
     .sort((a, b) => (a.priority_rank || 0) - (b.priority_rank || 0))
@@ -21,8 +23,17 @@ const BigThreeScreen = ({ items, onUpdateRating, onBack, onContinue }: BigThreeS
       <div className="text-center space-y-2 mb-6">
         <h2 className="font-heading text-lg uppercase tracking-wider text-command-gold">Your Highest-Priority Charges</h2>
         <p className="text-sm text-steel-white/70">These are the charges most likely impacting your business execution and your presence at home.</p>
+        {onRemovePriority && bigThree.length > 0 && (
+          <p className="text-xs text-steel-white/50 italic">Tap the × to remove duplicates or charges that don't belong here.</p>
+        )}
       </div>
 
+      {bigThree.length === 0 ? (
+        <div className="border border-gunmetal/40 bg-tactical-steel/40 rounded-sm p-6 text-center">
+          <p className="text-sm text-steel-white/70">No priority targets remaining.</p>
+          <p className="text-xs text-slate-grey mt-1">Continue to the Full Inventory to review all charges.</p>
+        </div>
+      ) : (
       <div className="space-y-4">
         {bigThree.map((item, idx) => {
           const domain = DOMAIN_LABELS[item.domain || "both"];
@@ -33,7 +44,19 @@ const BigThreeScreen = ({ items, onUpdateRating, onBack, onContinue }: BigThreeS
                 <span className="font-heading text-xs uppercase tracking-wider text-warning-red font-bold">
                   {priorityLabels[idx] || `BIG #${idx + 1}`}
                 </span>
-                <span className="text-xs text-slate-grey">{catEmoji} {item.category.replace("_", " ")}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-grey">{catEmoji} {item.category.replace("_", " ")}</span>
+                  {onRemovePriority && (
+                    <button
+                      onClick={() => onRemovePriority(item.id)}
+                      className="p-1 rounded-sm text-slate-grey hover:text-warning-red hover:bg-warning-red/10 transition-colors"
+                      title="Remove from priority targets"
+                      aria-label="Remove from priority targets"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="text-steel-white font-medium leading-relaxed">"{item.statement}"</p>
               <div className="flex items-center gap-3 text-xs text-slate-grey">
@@ -50,6 +73,7 @@ const BigThreeScreen = ({ items, onUpdateRating, onBack, onContinue }: BigThreeS
           );
         })}
       </div>
+      )}
 
       <p className="text-xs text-steel-white/60 text-center">
         You'll clear these first during Phase 2. Your first clearing session is in Week 3.

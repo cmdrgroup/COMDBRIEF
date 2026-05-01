@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import RoadmapView from "../roadmap/RoadmapView";
 import { STEP_NAMES } from "@/data/onboardingContent";
 import type { Operator } from "@/lib/operators";
-import { ChevronDown, ChevronRight, ExternalLink, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Trash2, X } from "lucide-react";
 
 interface OperatorDashboardProps {
   operator: Operator;
@@ -75,6 +75,11 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
   const handleDelete = async (item: ChargeItem) => {
     if (!confirm(`Delete this charge?\n\n"${item.statement}"`)) return;
     await deleteChargeItem(item.id);
+    queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
+  };
+
+  const handleRemovePriority = async (item: ChargeItem) => {
+    await updateChargeItem(item.id, { priority_rank: null });
     queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operator.id] });
   };
 
@@ -149,6 +154,14 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
                     <span className="font-heading text-sm text-warning-red font-bold w-16">BIG #{item.priority_rank}</span>
                     <span className="text-sm text-steel-white/90 flex-1">{item.statement}</span>
                     <span className="font-mono text-xs text-command-gold">{item.current_charge_level ?? item.charge_level}/10</span>
+                    <button
+                      onClick={() => handleRemovePriority(item)}
+                      className="p-1 rounded-sm text-slate-grey hover:text-warning-red hover:bg-warning-red/10 transition-colors"
+                      title="Remove from priority targets"
+                      aria-label="Remove from priority targets"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>

@@ -79,6 +79,17 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
     dismissMutation.mutate(id);
   }, [dismissMutation]);
 
+  const removePriorityMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await updateChargeItem(id, { priority_rank: null });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["charge_items_operator", operatorId] }),
+  });
+
+  const handleRemovePriority = useCallback((id: string) => {
+    removePriorityMutation.mutate(id);
+  }, [removePriorityMutation]);
+
   const hasItems = items.filter(i => i.source !== "blind_spot").length > 0;
 
   // Intro screen content
@@ -152,6 +163,7 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
         <BigThreeScreen
           items={items}
           onUpdateRating={handleUpdateRating}
+          onRemovePriority={handleRemovePriority}
           onBack={() => setScreen("intro")}
           onContinue={() => setScreen("inventory")}
         />
