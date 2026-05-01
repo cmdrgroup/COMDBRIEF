@@ -163,6 +163,7 @@ const MindClearingStep = ({ operatorId, isCompleted, onAcknowledge, onContinue }
         <BigThreeScreen
           items={items}
           onUpdateRating={handleUpdateRating}
+          onRemovePriority={handleRemovePriority}
           onBack={() => setScreen("intro")}
           onContinue={() => setScreen("inventory")}
         />
