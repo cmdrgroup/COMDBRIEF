@@ -1,14 +1,16 @@
+import { X } from "lucide-react";
 import { ChargeItem, DOMAIN_LABELS } from "@/lib/chargeItems";
 import ChargeRatingSlider from "./ChargeRatingSlider";
 
 interface BigThreeScreenProps {
   items: ChargeItem[];
   onUpdateRating: (id: string, rating: number) => void;
+  onRemovePriority?: (id: string) => void;
   onBack?: () => void;
   onContinue: () => void;
 }
 
-const BigThreeScreen = ({ items, onUpdateRating, onBack, onContinue }: BigThreeScreenProps) => {
+const BigThreeScreen = ({ items, onUpdateRating, onRemovePriority, onBack, onContinue }: BigThreeScreenProps) => {
   const bigThree = items
     .filter(i => i.priority_rank !== null)
     .sort((a, b) => (a.priority_rank || 0) - (b.priority_rank || 0))
