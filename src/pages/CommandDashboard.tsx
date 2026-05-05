@@ -22,6 +22,7 @@ const CommandDashboard = () => {
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const canSubmit = newFirst.trim().length > 0 && newLast.trim().length > 0 && isValidEmail(newEmail);
+  const getOnboardLink = (slug: string) => `${window.location.origin}/#/onboard/${slug}`;
 
   const { data: operators = [], isLoading } = useQuery({
     queryKey: ["operators"],
@@ -34,7 +35,7 @@ const CommandDashboard = () => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
       setShowAddForm(false);
       setNewFirst(""); setNewLast(""); setNewEmail("");
-      navigator.clipboard.writeText(`${window.location.origin}/onboard/${op.slug}`);
+      navigator.clipboard.writeText(getOnboardLink(op.slug));
       setCopiedId(op.id);
       setTimeout(() => setCopiedId(null), 3000);
     },
@@ -48,7 +49,7 @@ const CommandDashboard = () => {
   };
 
   const copyLink = (slug: string, id: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/onboard/${slug}`);
+    navigator.clipboard.writeText(getOnboardLink(slug));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -69,7 +70,7 @@ const CommandDashboard = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/command/login";
+    window.location.href = "/#/command/login";
   };
 
   if (view === "call") {
