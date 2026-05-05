@@ -97,12 +97,12 @@ const OperatorDashboard = ({ operator }: OperatorDashboardProps) => {
 
       {/* Nav */}
       <div className="border-b border-gunmetal">
-        <div className="max-w-5xl mx-auto px-6 flex gap-1">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 flex gap-1 overflow-x-auto no-scrollbar">
           {navItems.map(item => (
             <button
               key={item.key}
               onClick={() => setActiveSection(item.key)}
-              className={`px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 ${
+              className={`px-3 sm:px-4 py-3 font-mono text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 ${
                 activeSection === item.key ? "text-command-gold border-command-gold" : "text-slate-grey border-transparent hover:text-steel-white"
               }`}
             >
