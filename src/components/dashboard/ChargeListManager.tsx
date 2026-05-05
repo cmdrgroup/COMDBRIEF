@@ -173,9 +173,9 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   };
 
   return (
-    <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="directive-card max-w-3xl w-full max-h-[90vh] flex flex-col animate-fade-in-up" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-50 p-2 sm:p-4" onClick={onClose}>
+      <div className="directive-card max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col animate-fade-in-up p-3 sm:p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div>
             <h3 className="font-heading text-lg uppercase tracking-wider text-command-gold">
               Charge Inventory
@@ -188,6 +188,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
             <X className="w-5 h-5" />
           </button>
         </div>
+        <div className="flex-1 overflow-y-auto -mx-3 sm:-mx-6 px-3 sm:px-6 scrollbar-thin">
 
         {/* AI Generate Button */}
         {!showDraftReview && (
