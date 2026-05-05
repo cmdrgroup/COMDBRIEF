@@ -238,7 +238,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
 
         {/* Draft Review Panel */}
         {showDraftReview && (
-          <div className="mb-4 flex-1 overflow-y-auto">
+          <div className="mb-4">
             <div className="p-4 bg-background rounded-sm border border-accent/30 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">
@@ -388,7 +388,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
         </div>
 
         {/* Charge list by category */}
-        <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin">
+        <div className="space-y-2">
           {grouped.map(group => (
             <div key={group.key} className="border border-gunmetal/50 rounded-sm">
               <button
@@ -495,6 +495,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
           </div>
         </div>
         </>)}
+        </div>
       </div>
     </div>
   );
