@@ -1,43 +1,55 @@
-## Add Commander's Passage date per operator
+## Move roadmap generation to passage-date trigger + anchor to real dates
 
-### 1. Database migration
-Add a nullable `passage_date` (DATE) column to the `operators` table.
-
+### 1. Database migration (run in Supabase SQL Editor)
 ```sql
-ALTER TABLE public.operators ADD COLUMN passage_date DATE;
+ALTER TABLE public.roadmap_items ADD COLUMN IF NOT EXISTS target_date DATE;
 ```
 
-(No default — set manually per operator. Existing RLS policies already cover updates by command/admin users, so no policy changes needed.)
+### 2. Remove roadmap auto-load from GHL webhook
+`supabase/functions/ghl-webhook/index.ts` — delete the entire roadmap-loading block (~lines 156–235) and drop `roadmap_loaded` from the response. Charges still generate on signup.
 
-### 2. Data layer (`src/lib/operators.ts`)
-Add a helper:
+### 3. Add date-anchoring helpers to `src/lib/roadmap.ts`
 
 ```ts
-export async function updateOperatorPassageDate(operatorId: string, date: string | null) {
-  const { error } = await supabase
-    .from("operators")
-    .update({ passage_date: date })
-    .eq("id", operatorId);
-  if (error) throw error;
+// Variable totalWeeks — final week lands on passage date, earlier weeks step back 7 days each.
+export function computeTargetDate(passageDate: string, targetWeek: number, totalWeeks: number): string {
+  const passage = new Date(`${passageDate}T00:00:00Z`);
+  const offsetDays = (totalWeeks - targetWeek) * 7;
+  return new Date(passage.getTime() - offsetDays * 86400000).toISOString().slice(0, 10);
 }
 ```
 
-### 3. Admin dashboard UI (`src/pages/CommandDashboard.tsx`)
-- Add a new column **"Passage Date"** to the operators table (between Status and Progress).
-- Render a shadcn date picker (Popover + Calendar) in each row showing the current `passage_date` or "Set date".
-- On select → call `updateOperatorPassageDate` via a `useMutation`, then invalidate the `["operators"]` query so the table refreshes.
-- Allow clearing the date (small × button next to the picker when a date is set).
-- Format displayed dates as `en-AU` short (e.g. `12 Jun 2026`).
+Update `loadDefaultTemplate(operatorId, passageDate?)` to compute `target_date` per item using `totalWeeks = max(target_week)` from the template (so it adapts when the template length changes — no hardcoded 12).
 
-### 4. Surface the date elsewhere (optional but useful)
-- Show "Passage: {date}" in the `OperatorDetail` modal header so it's visible when drilling in.
-- Show it on the operator's own dashboard (`OperatorDashboard.tsx`) as a "T-minus X days to Passage" countdown banner if `passage_date` is set in the future.
+Add:
+- `generateRoadmapForOperator(operatorId, passageDate)` — checks if items exist; if not, inserts the default template anchored to the passage date. Returns `true` if generated, `false` if skipped.
+- `reanchorRoadmapDates(operatorId, passageDate)` — fetches existing items, derives `totalWeeks` from the max `target_week` present, recalculates and updates `target_date` on each item. Preserves all item content, completion state, and custom additions.
 
-If you'd rather keep this minimal, I can skip step 4 and just do the admin-side date picker.
+### 4. Wire into `passageDateMutation` in `src/pages/CommandDashboard.tsx`
 
-### Technical notes
-- shadcn `Calendar` + `Popover` are already in the project (`src/components/ui/calendar.tsx`, `popover.tsx`).
-- The Supabase types file regenerates automatically after the migration so `passage_date` becomes a typed field on `Operator`.
-- Mutation uses optimistic invalidation — same pattern as the existing `createMutation`.
+```ts
+mutationFn: async ({ id, date }) => {
+  await updateOperatorPassageDate(id, date);
+  if (date) {
+    const created = await generateRoadmapForOperator(id, date);
+    if (!created) await reanchorRoadmapDates(id, date);
+  }
+  // Clearing the date: leave roadmap items intact (per your direction)
+}
+```
 
-**Confirm:** include the operator-facing countdown (step 4), or admin-only for now?
+Add a toast: "Roadmap generated" on first set, "Roadmap dates updated" on re-anchor, "Passage date cleared" when nulled.
+
+### 5. Surface real dates in the roadmap UI (`src/components/roadmap/RoadmapView.tsx`)
+Where items currently show "Week N", show `format(target_date, "Week of d MMM yyyy")` when `target_date` is set, falling back to "Week N" otherwise. Quick scan + minimal edit — the bulk of the file is unchanged.
+
+### Behaviour summary
+| Action | Effect |
+|---|---|
+| Set passage date (no roadmap yet) | Generate full roadmap, anchored |
+| Set passage date (roadmap exists) | Re-anchor existing items, no regeneration |
+| Change passage date | Re-anchor existing items |
+| Clear passage date | Roadmap untouched (dates remain from previous setting) |
+
+### Forward-compatibility for Message 3
+`computeTargetDate` and `loadDefaultTemplate` already accept variable `totalWeeks` derived at runtime from `max(target_week)`. When you switch to a dynamic-window template (different length per operator based on their available time), no changes to the anchoring math are needed — it adapts automatically.
