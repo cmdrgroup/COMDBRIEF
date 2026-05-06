@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { DEFAULT_ROADMAP_ITEMS } from "@/lib/roadmapTemplate";
+import { DEFAULT_ROADMAP_ITEMS, type RoadmapTemplateItem } from "@/lib/roadmapTemplate";
 export { DEFAULT_ROADMAP_ITEMS } from "@/lib/roadmapTemplate";
+
+/** Minimum window: 4 (phase 1) + 3 end-anchor weeks + 1 flex slot. */
+export const MIN_ROADMAP_WEEKS = 8;
 
 export type RoadmapItem = Database["public"]["Tables"]["roadmap_items"]["Row"];
 export type RoadmapPhase = Database["public"]["Enums"]["roadmap_phase"];
