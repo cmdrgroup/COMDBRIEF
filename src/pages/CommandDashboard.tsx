@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, ListChecks, Phone, Target, MapPin } from "lucide-react";
-import { getAllOperators, createOperator, getCompletedCount, type Operator } from "@/lib/operators";
-import { STEP_NAMES } from "@/data/onboardingContent";
+import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, Phone, Calendar as CalendarIcon, X } from "lucide-react";
+import { format } from "date-fns";
+import { getAllOperators, createOperator, getCompletedCount, updateOperatorPassageDate, type Operator } from "@/lib/operators";
 import { supabase } from "@/integrations/supabase/client";
 import OperatorDetail from "@/components/dashboard/OperatorDetail";
 import DeploymentCallScreen from "@/components/dashboard/DeploymentCallScreen";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 type View = "operators" | "call";
 
@@ -39,6 +42,11 @@ const CommandDashboard = () => {
       setCopiedId(op.id);
       setTimeout(() => setCopiedId(null), 3000);
     },
+  });
+
+  const passageDateMutation = useMutation({
+    mutationFn: ({ id, date }: { id: string; date: string | null }) => updateOperatorPassageDate(id, date),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["operators"] }),
   });
 
   const stats = {
@@ -189,7 +197,7 @@ const CommandDashboard = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gunmetal">
-                    {["Name", "Email", "Enrolled", "Status", "Progress", "Last Active", "Actions"].map((h) => (
+                    {["Name", "Email", "Enrolled", "Status", "Passage Date", "Progress", "Last Active", "Actions"].map((h) => (
                       <th key={h} className="text-left py-3 px-3 font-mono text-[10px] uppercase tracking-widest text-slate-grey">
                         {h}
                       </th>
@@ -209,6 +217,54 @@ const CommandDashboard = () => {
                           {new Date(op.enrolled_at).toLocaleDateString("en-AU")}
                         </td>
                         <td className="py-3 px-3">{statusBadge(op.status)}</td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-2 py-1 rounded-sm border border-gunmetal hover:border-command-gold transition-colors font-mono text-xs",
+                                    (op as Operator & { passage_date?: string | null }).passage_date
+                                      ? "text-command-gold"
+                                      : "text-slate-grey"
+                                  )}
+                                >
+                                  <CalendarIcon className="w-3 h-3" />
+                                  {(op as Operator & { passage_date?: string | null }).passage_date
+                                    ? format(new Date((op as Operator & { passage_date?: string | null }).passage_date as string), "dd MMM yyyy")
+                                    : "Set date"}
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0 bg-tactical-steel border-gunmetal" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={
+                                    (op as Operator & { passage_date?: string | null }).passage_date
+                                      ? new Date((op as Operator & { passage_date?: string | null }).passage_date as string)
+                                      : undefined
+                                  }
+                                  onSelect={(d) =>
+                                    passageDateMutation.mutate({
+                                      id: op.id,
+                                      date: d ? format(d, "yyyy-MM-dd") : null,
+                                    })
+                                  }
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {(op as Operator & { passage_date?: string | null }).passage_date && (
+                              <button
+                                onClick={() => passageDateMutation.mutate({ id: op.id, date: null })}
+                                className="p-1 hover:bg-gunmetal rounded-sm transition-colors"
+                                title="Clear date"
+                              >
+                                <X className="w-3 h-3 text-slate-grey" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <div className="w-20 h-1.5 bg-gunmetal rounded-full overflow-hidden">

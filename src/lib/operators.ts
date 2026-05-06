@@ -59,6 +59,14 @@ export async function overrideStep(operatorId: string, stepNumber: number) {
   return updateOperatorStep(operatorId, stepNumber);
 }
 
+export async function updateOperatorPassageDate(operatorId: string, date: string | null) {
+  const { error } = await supabase
+    .from("operators")
+    .update({ passage_date: date } as never)
+    .eq("id", operatorId);
+  if (error) throw error;
+}
+
 export function getCompletedSteps(operator: Operator): boolean[] {
   return [
     operator.step_0_completed,
