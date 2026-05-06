@@ -1,49 +1,32 @@
-## Lock admin down to curtis.tofa@gmail.com only
+## Rebuild roadmap when passage date changes
 
-**Problem:** The seed SQL I gave you did two over-broad things:
-1. Backfilled `admin` for every row in `auth.users` (not just you).
-2. Installed a trigger (`on_auth_user_created_grant_admin`) that auto-grants `admin` to every future signup.
+**Problem:** `reanchorRoadmapDates()` only shifts existing item dates against a frozen `totalWeeks` derived from the old roadmap. When you push the passage date out (or in), the phase structure (Weeks 1–4 / 5–8 / 9–11 / 12) and the underlying `target_week` values stay frozen — only `target_date` slides — so weeks anchored near the start can land before today and the four-phase split no longer matches the new window.
 
-This means anyone who ever signs up — including operators if they ever get auth accounts — becomes an admin. We need to revoke everything and re-grant only to you.
+**Fix:** When the passage date changes on an operator who already has a roadmap, rebuild the roadmap against the new window so `totalWeeks`, phase assignments, and per-item `target_date` are all recomputed.
 
-### Steps
+### Behaviour
 
-1. Run a cleanup SQL block in the Supabase SQL Editor that:
-   - Drops the `on_auth_user_created_grant_admin` trigger on `auth.users`.
-   - Drops the `public.grant_admin_on_signup()` function.
-   - Deletes every row from `public.user_roles` where `role = 'admin'`.
-   - Re-inserts a single admin row for `curtis.tofa@gmail.com` (looked up by email from `auth.users`).
+In `passageDateMutation` (`src/pages/CommandDashboard.tsx`), when a roadmap already exists and the date changes:
+1. Capture which item titles are currently `completed` for that operator.
+2. Delete all existing `roadmap_items` for the operator.
+3. Run `loadDefaultTemplate(operatorId, newPassageDate)` — this recomputes `totalWeeks` via `computeWeeksUntilPassage`, re-assigns weeks, re-derives `target_date`, and re-inserts everything.
+4. Re-mark items whose title matches a previously-completed item as `completed` (best-effort preservation of progress).
+5. Toast: "Roadmap rebuilt for new passage date" so it's clear the schedule was regenerated, not just shifted.
 
-2. Verify with:
-   ```sql
-   SELECT u.email, ur.role
-   FROM auth.users u
-   LEFT JOIN public.user_roles ur ON ur.user_id = u.id;
-   ```
-   Only `curtis.tofa@gmail.com` should show `admin`. Everyone else should show `NULL`.
+If no roadmap exists yet, behaviour is unchanged: `generateRoadmapForOperator` runs (creates or defers based on `ROADMAP_AUTOGEN_MAX_WEEKS`).
 
-3. You log out of `/command` and back in so the JWT refreshes, then set Ryan's passage date to confirm it still works for you.
+### Implementation
 
-### Future operator grants
-When you need to add another admin, run a one-line `INSERT INTO public.user_roles (user_id, role) SELECT id, 'admin' FROM auth.users WHERE email = '...'` manually. No trigger, no auto-grant.
+1. **`src/lib/roadmap.ts`** — add `rebuildRoadmapForOperator(operatorId, passageDate)`:
+   - Fetch existing items, collect titles where `completed = true`.
+   - `delete from roadmap_items where operator_id = ...`.
+   - Call `loadDefaultTemplate(operatorId, passageDate)`.
+   - Re-fetch new items, update `completed = true, completed_at = now()` for any whose `title` matches the captured set.
+   - Returns `"rebuilt"` so the caller can toast appropriately.
 
-### Out of scope
-No app code changes. RLS policies and `src/lib/operators.ts` are correct — we're just fixing the role data.
+2. **`src/pages/CommandDashboard.tsx`** — in `passageDateMutation.mutationFn`, replace the `reanchorRoadmapDates` branch with `rebuildRoadmapForOperator`. Update the success toast for the new `"rebuilt"` result. Also invalidate the `roadmap_items` query so any open OperatorDetail/Roadmap view refreshes.
 
-### The SQL to run
-
-```sql
--- 1. Remove the auto-grant trigger and function
-DROP TRIGGER IF EXISTS on_auth_user_created_grant_admin ON auth.users;
-DROP FUNCTION IF EXISTS public.grant_admin_on_signup();
-
--- 2. Revoke admin from everyone
-DELETE FROM public.user_roles WHERE role = 'admin';
-
--- 3. Grant admin to Curtis only
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'admin'::public.app_role
-FROM auth.users
-WHERE email = 'curtis.tofa@gmail.com'
-ON CONFLICT DO NOTHING;
-```
+### Notes
+- Title-based completion preservation is intentionally simple. Identical titles (e.g. multiple "Submit SITREP" entries) match by title only, so completion may collapse onto the first matching slot. That is acceptable — the alternative (matching by phase + target_week) would lose completions whenever the week shifts.
+- Custom items added by Command via `addRoadmapItem` will be **lost** in the rebuild because they aren't part of the template. If you've been adding bespoke items, tell me and we'll preserve them by re-inserting non-standard items after the rebuild.
+- Weekly focus rows (`weekly_focus`) reference `week_number` directly. If `totalWeeks` changes, week numbers in those rows may now point to weeks that don't exist or have shifted meaning. Out of scope for this fix; flag if you want them cleared on rebuild too.
