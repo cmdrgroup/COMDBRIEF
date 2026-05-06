@@ -1,29 +1,43 @@
-## Problem
+## Add Commander's Passage date per operator
 
-On the onboarding "Your Highest-Priority Charges" screen (`BigThreeScreen`), the operator sees the charges that have a `priority_rank` (1, 2, 3) assigned by Command. Right now there's no way for the operator to remove a duplicate or unwanted priority target — they just have to look at it. Same issue can show up on the Operator Dashboard's priority list.
+### 1. Database migration
+Add a nullable `passage_date` (DATE) column to the `operators` table.
 
-## Plan
+```sql
+ALTER TABLE public.operators ADD COLUMN passage_date DATE;
+```
 
-### 1. `src/components/onboarding/mind-clearing/BigThreeScreen.tsx`
-- Add an `onRemovePriority: (id: string) => void` prop.
-- Render a small "Remove" control (X icon from `lucide-react`) on each priority card, top-right corner near the "BIG #N" label.
-- Clicking it calls `onRemovePriority(item.id)` — does not delete the charge, just clears its priority rank so it drops out of the Big Three list (still available in Full Inventory).
-- After removal, the screen automatically shows the next highest charges (or fewer if none remain). Add an empty-state line if the list becomes empty: "No priority targets remaining. Continue to the Full Inventory to review all charges."
-- The `Continue to Full Inventory` button stays enabled even when empty.
+(No default — set manually per operator. Existing RLS policies already cover updates by command/admin users, so no policy changes needed.)
 
-### 2. `src/components/onboarding/steps/MindClearingStep.tsx`
-- Add a `removePriorityMutation` that calls `updateChargeItem(id, { priority_rank: null })` and invalidates the charge list query.
-- Wire `handleRemovePriority` into the new prop on `<BigThreeScreen>`.
+### 2. Data layer (`src/lib/operators.ts`)
+Add a helper:
 
-### 3. `src/components/operator/OperatorDashboard.tsx` (priority section)
-- Apply the same affordance: a small X next to each `BIG #n` card that clears `priority_rank` via `updateChargeItem`. Same UX — does not delete the charge, just removes it from the priority list.
-- Useful when Command has assigned more than 3 ranks or duplicated ranks.
+```ts
+export async function updateOperatorPassageDate(operatorId: string, date: string | null) {
+  const { error } = await supabase
+    .from("operators")
+    .update({ passage_date: date })
+    .eq("id", operatorId);
+  if (error) throw error;
+}
+```
 
-## Out of scope
-- We are NOT deleting the underlying charge_item records (the operator can still see them in the Full Inventory).
-- We are NOT changing how Command assigns priorities in `ChargeListManager`.
+### 3. Admin dashboard UI (`src/pages/CommandDashboard.tsx`)
+- Add a new column **"Passage Date"** to the operators table (between Status and Progress).
+- Render a shadcn date picker (Popover + Calendar) in each row showing the current `passage_date` or "Set date".
+- On select → call `updateOperatorPassageDate` via a `useMutation`, then invalidate the `["operators"]` query so the table refreshes.
+- Allow clearing the date (small × button next to the picker when a date is set).
+- Format displayed dates as `en-AU` short (e.g. `12 Jun 2026`).
 
-## Technical notes
-- `updateChargeItem` already supports `priority_rank: number | null` (see `src/lib/chargeItems.ts`).
-- Realtime subscriptions in `MindClearingStep` and `OperatorDashboard` already invalidate on `charge_items` changes, so the UI will update automatically.
-- Confirm-on-click is not added (single click removes); the action is reversible by Command from the dashboard, so a confirm dialog would just add friction.
+### 4. Surface the date elsewhere (optional but useful)
+- Show "Passage: {date}" in the `OperatorDetail` modal header so it's visible when drilling in.
+- Show it on the operator's own dashboard (`OperatorDashboard.tsx`) as a "T-minus X days to Passage" countdown banner if `passage_date` is set in the future.
+
+If you'd rather keep this minimal, I can skip step 4 and just do the admin-side date picker.
+
+### Technical notes
+- shadcn `Calendar` + `Popover` are already in the project (`src/components/ui/calendar.tsx`, `popover.tsx`).
+- The Supabase types file regenerates automatically after the migration so `passage_date` becomes a typed field on `Operator`.
+- Mutation uses optimistic invalidation — same pattern as the existing `createMutation`.
+
+**Confirm:** include the operator-facing countdown (step 4), or admin-only for now?
