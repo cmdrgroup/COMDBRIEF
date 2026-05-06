@@ -251,7 +251,7 @@ const CommandDashboard = () => {
                                     : "Set date"}
                                 </button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0 bg-tactical-steel border-gunmetal pointer-events-auto z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                              <PopoverContent className="w-auto p-0 bg-tactical-steel border-gunmetal pointer-events-auto z-[100]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                                 <Calendar
                                   mode="single"
                                   selected={
