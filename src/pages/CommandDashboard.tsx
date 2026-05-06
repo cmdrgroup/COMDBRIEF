@@ -44,6 +44,11 @@ const CommandDashboard = () => {
     },
   });
 
+  const passageDateMutation = useMutation({
+    mutationFn: ({ id, date }: { id: string; date: string | null }) => updateOperatorPassageDate(id, date),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["operators"] }),
+  });
+
   const stats = {
     total: operators.length,
     completed: operators.filter((o) => o.status === "complete").length,
