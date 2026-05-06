@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, Phone, Calendar as CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { getAllOperators, createOperator, getCompletedCount, updateOperatorPassageDate, type Operator } from "@/lib/operators";
-import { generateRoadmapForOperator, reanchorRoadmapDates } from "@/lib/roadmap";
+import { generateRoadmapForOperator, reanchorRoadmapDates, rawWeeksUntilPassage, ROADMAP_AUTOGEN_MAX_WEEKS, forceGenerateRoadmap } from "@/lib/roadmap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import OperatorDetail from "@/components/dashboard/OperatorDetail";
