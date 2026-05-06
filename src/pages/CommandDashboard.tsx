@@ -290,6 +290,22 @@ const CommandDashboard = () => {
                                 <X className="w-3 h-3 text-slate-grey" />
                               </button>
                             )}
+                            {(() => {
+                              const pd = (op as Operator & { passage_date?: string | null }).passage_date;
+                              if (!pd) return null;
+                              const weeks = rawWeeksUntilPassage(pd);
+                              if (weeks <= ROADMAP_AUTOGEN_MAX_WEEKS) return null;
+                              return (
+                                <button
+                                  onClick={() => forceGenerateMutation.mutate({ id: op.id, date: pd })}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-sm border border-command-gold/40 bg-command-gold/10 text-command-gold hover:bg-command-gold/20 font-mono text-[10px] uppercase tracking-widest transition-colors"
+                                  title={`Passage is ${weeks} weeks out — roadmap deferred. Click to generate now.`}
+                                >
+                                  <AlertCircle className="w-3 h-3" />
+                                  {weeks}w · Generate
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="py-3 px-3">
