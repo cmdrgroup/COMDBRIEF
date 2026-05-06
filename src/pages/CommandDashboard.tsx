@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, ListChecks, Phone, Target, MapPin } from "lucide-react";
-import { getAllOperators, createOperator, getCompletedCount, type Operator } from "@/lib/operators";
-import { STEP_NAMES } from "@/data/onboardingContent";
+import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, Phone, Calendar as CalendarIcon, X } from "lucide-react";
+import { format } from "date-fns";
+import { getAllOperators, createOperator, getCompletedCount, updateOperatorPassageDate, type Operator } from "@/lib/operators";
 import { supabase } from "@/integrations/supabase/client";
 import OperatorDetail from "@/components/dashboard/OperatorDetail";
 import DeploymentCallScreen from "@/components/dashboard/DeploymentCallScreen";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 type View = "operators" | "call";
 
