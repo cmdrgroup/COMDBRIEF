@@ -197,7 +197,7 @@ const CommandDashboard = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gunmetal">
-                    {["Name", "Email", "Enrolled", "Status", "Progress", "Last Active", "Actions"].map((h) => (
+                    {["Name", "Email", "Enrolled", "Status", "Passage Date", "Progress", "Last Active", "Actions"].map((h) => (
                       <th key={h} className="text-left py-3 px-3 font-mono text-[10px] uppercase tracking-widest text-slate-grey">
                         {h}
                       </th>
