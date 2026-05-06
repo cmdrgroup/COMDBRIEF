@@ -38,35 +38,23 @@ export const DEFAULT_ROADMAP_ITEMS: RoadmapTemplateItem[] = [
   { phase: "phase_1", title: "Submit First SITREP", description: "Current state of business, home, and self. Honest. No performance.", icon: "📝", anchor: "start", offset: 1 },
   { phase: "phase_1", title: "Complete Physical Baseline", description: "Record: body weight, resting heart rate, push-ups (2 min), sit-ups (2 min), 2.4km run time.", icon: "💪", anchor: "start", offset: 1 },
   // Week 3 (offset 2)
-  { phase: "phase_1", title: "Learn the Charge-Clearing Framework", description: "Review the 10 tools, the process, the principle.", icon: "📖", anchor: "start", offset: 1 },
+  { phase: "phase_1", title: "Learn the Charge-Clearing Framework", description: "Review the 10 tools, the process, the principle.", icon: "📖", anchor: "start", offset: 2 },
   { phase: "phase_1", title: "Record Clearing Outcome", description: "Log: charge type, target, initial rating, final rating, new belief, committed action.", icon: "📊", anchor: "start", offset: 2 },
   // Week 4 (offset 3)
   { phase: "phase_1", title: "Complete Command Foundations Assessment", description: "Self-assessment against the Three Gates: responsibility, avoidance awareness, submission to structure.", icon: "🏛️", anchor: "start", offset: 3 },
   { phase: "phase_1", title: "Define 90-Day Strategic Objectives", description: "Three domains — Business, Home, Self. Measurable. Specific. Time-bound.", icon: "🗺️", anchor: "start", offset: 3 },
   { phase: "phase_1", title: "Submit SITREP + Compliance Review", description: "Honest 4-week review. What's slipping? Where did you negotiate with the standard?", icon: "📝", anchor: "start", offset: 3 },
 
-  // ── PHASE 2 — CLEARING OPERATIONS (flex clusters 0–3)
-  // Cluster 0 — Self-Doubt
-  { phase: "phase_2", title: "Self-Doubt Clearing Session", description: "Where are you doubting yourself most — leader, husband, father, operator? Clear it.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 0 },
+  // ── PHASE 2 / 3 SCAFFOLDING — non-clearing items only.
+  // Clearing sessions are inserted dynamically per-operator from their charge inventory.
   { phase: "phase_2", title: "Submit SITREP", description: "Weekly situation report — progress, blockers, state of mind.", icon: "📝", anchor: "flex", offset: 0, flex_cluster: 0 },
-  // Cluster 1 — Fear & Anxiety
-  { phase: "phase_2", title: "Fear & Anxiety Clearing Session", description: "What are you afraid of? The Passage? Failing? Being exposed? Your marriage? Name it. Clear it.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 1 },
   { phase: "phase_2", title: "Submit SITREP", description: "Weekly situation report — progress, blockers, state of mind.", icon: "📝", anchor: "flex", offset: 0, flex_cluster: 1 },
-  // Cluster 2 — Guilt, Shame & Judgment
-  { phase: "phase_2", title: "Guilt & Shame Clearing Session", description: "Past failures, things you haven't told your wife, the double life. Clear it before the Passage exposes it.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 2 },
-  { phase: "phase_2", title: "Judgment Clearing Session", description: "Fear of being judged by the other men, by Curtis, by yourself. Or judgment of others keeping you isolated.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 2 },
+  { phase: "phase_2", title: "Charge Inventory Review", description: "Revisit Week 1 inventory. What's cleared? What remains? What surfaced? Re-rate everything.", icon: "📊", anchor: "flex", offset: 0, flex_cluster: 2 },
   { phase: "phase_2", title: "Submit SITREP", description: "Weekly situation report — progress, blockers, state of mind.", icon: "📝", anchor: "flex", offset: 0, flex_cluster: 2 },
-  // Cluster 3 — Resentment & Frustration
-  { phase: "phase_2", title: "Resentment Clearing Session", description: "Who do you resent? Wife? Business partner? Parent? Yourself? Often the heaviest charge.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 3 },
-  { phase: "phase_2", title: "Frustration Clearing Session", description: "What frustrates you most? Usually a conversation you haven't had or an expectation you haven't enforced.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 3 },
-  { phase: "phase_2", title: "Charge Inventory Review", description: "Revisit Week 1 inventory. What's cleared? What remains? What surfaced? Re-rate everything.", icon: "📊", anchor: "flex", offset: 0, flex_cluster: 3 },
-  { phase: "phase_2", title: "Submit SITREP", description: "Weekly situation report — progress, blockers, state of mind.", icon: "📝", anchor: "flex", offset: 0, flex_cluster: 3 },
 
-  // ── PHASE 3 — EDGE & INTEGRATION
-  // Cluster 4 — Integration (flex)
-  { phase: "phase_3", title: "Clear Remaining Charges", description: "Anything still rated 7+ gets cleared. If you've been avoiding one — that's the one.", icon: "🎯", anchor: "flex", offset: 0, flex_cluster: 4 },
-  { phase: "phase_3", title: "90-Day Objectives Check-In", description: "Revisit Week 4 objectives. Still the right targets? Refine.", icon: "🗺️", anchor: "flex", offset: 0, flex_cluster: 4 },
-  { phase: "phase_3", title: "Submit SITREP", description: "Weekly situation report — progress, blockers, state of mind.", icon: "📝", anchor: "flex", offset: 0, flex_cluster: 4 },
+  // ── PHASE 3 — EDGE & INTEGRATION (non-clearing scaffolding)
+  { phase: "phase_3", title: "90-Day Objectives Check-In", description: "Revisit Week 4 objectives. Still the right targets? Refine.", icon: "🗺️", anchor: "flex", offset: 0, flex_cluster: 3 },
+  { phase: "phase_3", title: "Submit SITREP", description: "Weekly situation report — progress, blockers, state of mind.", icon: "📝", anchor: "flex", offset: 0, flex_cluster: 3 },
 
   // Edge — end offset 2 (passage week minus 2)
   { phase: "phase_3", title: "Physical Readiness Check", description: "Re-test Week 2 baseline. Has it improved? Commander's 75 movement should show results.", icon: "💪", anchor: "end", offset: 2 },
