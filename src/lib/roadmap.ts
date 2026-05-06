@@ -222,11 +222,50 @@ export async function loadDefaultTemplate(operatorId: string, passageDate: strin
   if (error) throw error;
 }
 
+/** Window (weeks) beyond which roadmap generation is deferred for manual scheduling. */
+export const ROADMAP_AUTOGEN_MAX_WEEKS = 10;
+
+/**
+ * Compute the raw (un-clamped) number of weeks between today and the passage date.
+ * Used to decide whether to auto-generate the roadmap or defer it.
+ */
+export function rawWeeksUntilPassage(passageDate: string, today: Date = new Date()): number {
+  const passage = new Date(`${passageDate}T00:00:00Z`);
+  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const diffDays = Math.max(0, Math.round((passage.getTime() - todayUtc.getTime()) / 86400000));
+  return Math.ceil(diffDays / 7);
+}
+
+export type RoadmapGenerationResult = "created" | "deferred" | "exists";
+
 /**
  * Generate the default roadmap for an operator if they don't already have one.
- * Returns true if items were created, false if the operator already had a roadmap.
+ * - Returns "exists" if a roadmap is already present.
+ * - Returns "deferred" if the passage date is more than ROADMAP_AUTOGEN_MAX_WEEKS away
+ *   (Command will trigger generation manually via forceGenerateRoadmap).
+ * - Returns "created" if items were generated.
  */
-export async function generateRoadmapForOperator(operatorId: string, passageDate: string): Promise<boolean> {
+export async function generateRoadmapForOperator(
+  operatorId: string,
+  passageDate: string,
+): Promise<RoadmapGenerationResult> {
+  const { data: existing, error: checkError } = await supabase
+    .from("roadmap_items")
+    .select("id")
+    .eq("operator_id", operatorId)
+    .limit(1);
+  if (checkError) throw checkError;
+  if (existing && existing.length > 0) return "exists";
+  if (rawWeeksUntilPassage(passageDate) > ROADMAP_AUTOGEN_MAX_WEEKS) return "deferred";
+  await loadDefaultTemplate(operatorId, passageDate);
+  return "created";
+}
+
+/**
+ * Force-generate the roadmap regardless of how far out the passage date is.
+ * Used by Command to manually time delivery for operators with longer windows.
+ */
+export async function forceGenerateRoadmap(operatorId: string, passageDate: string): Promise<boolean> {
   const { data: existing, error: checkError } = await supabase
     .from("roadmap_items")
     .select("id")

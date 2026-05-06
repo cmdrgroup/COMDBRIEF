@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, Phone, Calendar as CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { getAllOperators, createOperator, getCompletedCount, updateOperatorPassageDate, type Operator } from "@/lib/operators";
-import { generateRoadmapForOperator, reanchorRoadmapDates } from "@/lib/roadmap";
+import { generateRoadmapForOperator, reanchorRoadmapDates, rawWeeksUntilPassage, ROADMAP_AUTOGEN_MAX_WEEKS, forceGenerateRoadmap } from "@/lib/roadmap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import OperatorDetail from "@/components/dashboard/OperatorDetail";
@@ -50,19 +50,30 @@ const CommandDashboard = () => {
     mutationFn: async ({ id, date }: { id: string; date: string | null }) => {
       await updateOperatorPassageDate(id, date);
       if (date) {
-        const created = await generateRoadmapForOperator(id, date);
-        if (!created) await reanchorRoadmapDates(id, date);
-        return { date, created };
+        const result = await generateRoadmapForOperator(id, date);
+        if (result === "exists") await reanchorRoadmapDates(id, date);
+        return { date, result };
       }
-      return { date: null, created: false };
+      return { date: null, result: "exists" as const };
     },
-    onSuccess: (result) => {
+    onSuccess: (r) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
-      if (!result.date) toast.success("Passage date cleared");
-      else if (result.created) toast.success("Roadmap generated");
+      if (!r.date) toast.success("Passage date cleared");
+      else if (r.result === "created") toast.success("Roadmap generated");
+      else if (r.result === "deferred") toast.warning(`Passage date is more than ${ROADMAP_AUTOGEN_MAX_WEEKS} weeks out — roadmap deferred for manual delivery`);
       else toast.success("Roadmap dates updated");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update passage date"),
+  });
+
+  const forceGenerateMutation = useMutation({
+    mutationFn: async ({ id, date }: { id: string; date: string }) => forceGenerateRoadmap(id, date),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["operators"] });
+      queryClient.invalidateQueries({ queryKey: ["roadmap_items"] });
+      toast.success(created ? "Roadmap generated" : "Roadmap already exists");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to generate roadmap"),
   });
 
   const stats = {
@@ -279,6 +290,22 @@ const CommandDashboard = () => {
                                 <X className="w-3 h-3 text-slate-grey" />
                               </button>
                             )}
+                            {(() => {
+                              const pd = (op as Operator & { passage_date?: string | null }).passage_date;
+                              if (!pd) return null;
+                              const weeks = rawWeeksUntilPassage(pd);
+                              if (weeks <= ROADMAP_AUTOGEN_MAX_WEEKS) return null;
+                              return (
+                                <button
+                                  onClick={() => forceGenerateMutation.mutate({ id: op.id, date: pd })}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-sm border border-command-gold/40 bg-command-gold/10 text-command-gold hover:bg-command-gold/20 font-mono text-[10px] uppercase tracking-widest transition-colors"
+                                  title={`Passage is ${weeks} weeks out — roadmap deferred. Click to generate now.`}
+                                >
+                                  <AlertCircle className="w-3 h-3" />
+                                  {weeks}w · Generate
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="py-3 px-3">
