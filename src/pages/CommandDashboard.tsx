@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, Phone, Calendar as CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { getAllOperators, createOperator, getCompletedCount, updateOperatorPassageDate, type Operator } from "@/lib/operators";
-import { generateRoadmapForOperator, reanchorRoadmapDates, rawWeeksUntilPassage, ROADMAP_AUTOGEN_MAX_WEEKS, forceGenerateRoadmap } from "@/lib/roadmap";
+import { generateRoadmapForOperator, rebuildRoadmapForOperator, rawWeeksUntilPassage, ROADMAP_AUTOGEN_MAX_WEEKS, forceGenerateRoadmap } from "@/lib/roadmap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import OperatorDetail from "@/components/dashboard/OperatorDetail";
@@ -51,15 +51,20 @@ const CommandDashboard = () => {
       await updateOperatorPassageDate(id, date);
       if (date) {
         const result = await generateRoadmapForOperator(id, date);
-        if (result === "exists") await reanchorRoadmapDates(id, date);
+        if (result === "exists") {
+          await rebuildRoadmapForOperator(id, date);
+          return { date, result: "rebuilt" as const };
+        }
         return { date, result };
       }
       return { date: null, result: "exists" as const };
     },
     onSuccess: (r) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
+      queryClient.invalidateQueries({ queryKey: ["roadmap_items"] });
       if (!r.date) toast.success("Passage date cleared");
       else if (r.result === "created") toast.success("Roadmap generated");
+      else if (r.result === "rebuilt") toast.success("Roadmap rebuilt for new passage date");
       else if (r.result === "deferred") toast.warning(`Passage date is more than ${ROADMAP_AUTOGEN_MAX_WEEKS} weeks out — roadmap deferred for manual delivery`);
       else toast.success("Roadmap dates updated");
     },

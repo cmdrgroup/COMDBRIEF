@@ -281,6 +281,40 @@ export async function forceGenerateRoadmap(operatorId: string, passageDate: stri
  * Re-anchor existing roadmap items' target_date values to a new passage date.
  * Preserves all item content/completion; derives totalWeeks from the operator's actual items.
  */
+/**
+ * Rebuild the roadmap from scratch against a new passage date.
+ * Recomputes totalWeeks, phase assignments, target_week, and target_date.
+ * Best-effort preserves completion state by matching on item title.
+ */
+export async function rebuildRoadmapForOperator(operatorId: string, passageDate: string): Promise<void> {
+  const existing = await getRoadmapItems(operatorId);
+  const completedTitles = new Set(existing.filter((i) => i.completed).map((i) => i.title));
+
+  const { error: delErr } = await supabase.from("roadmap_items").delete().eq("operator_id", operatorId);
+  if (delErr) throw delErr;
+
+  await loadDefaultTemplate(operatorId, passageDate);
+
+  if (completedTitles.size > 0) {
+    const fresh = await getRoadmapItems(operatorId);
+    const seen = new Set<string>();
+    const toComplete = fresh.filter((i) => {
+      if (!completedTitles.has(i.title) || seen.has(i.title)) return false;
+      seen.add(i.title);
+      return true;
+    });
+    const now = new Date().toISOString();
+    await Promise.all(
+      toComplete.map((i) =>
+        supabase
+          .from("roadmap_items")
+          .update({ completed: true, completed_at: now } as never)
+          .eq("id", i.id)
+      )
+    );
+  }
+}
+
 export async function reanchorRoadmapDates(operatorId: string, passageDate: string): Promise<void> {
   const items = await getRoadmapItems(operatorId);
   if (items.length === 0) return;
