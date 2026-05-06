@@ -29,8 +29,13 @@ const OperatorDetail = ({ operator, onClose }: OperatorDetailProps) => {
 
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const handleLoadTemplate = async () => {
+    const passageDate = (operator as typeof operator & { passage_date?: string | null }).passage_date;
+    if (!passageDate) {
+      alert("Set a Passage date for this operator before loading the roadmap template.");
+      return;
+    }
     setLoadingTemplate(true);
-    await loadDefaultTemplate(operator.id);
+    await loadDefaultTemplate(operator.id, passageDate);
     queryClient.invalidateQueries({ queryKey: ["roadmap_items", operator.id] });
     setLoadingTemplate(false);
   };

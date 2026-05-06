@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { DEFAULT_ROADMAP_ITEMS } from "@/lib/roadmapTemplate";
+import { DEFAULT_ROADMAP_ITEMS, type RoadmapTemplateItem } from "@/lib/roadmapTemplate";
 export { DEFAULT_ROADMAP_ITEMS } from "@/lib/roadmapTemplate";
+
+/** Minimum window: 4 (phase 1) + 3 end-anchor weeks + 1 flex slot. */
+export const MIN_ROADMAP_WEEKS = 8;
 
 export type RoadmapItem = Database["public"]["Tables"]["roadmap_items"]["Row"];
 export type RoadmapPhase = Database["public"]["Enums"]["roadmap_phase"];
@@ -78,9 +81,63 @@ export function computeTargetDate(passageDate: string, targetWeek: number, total
   return target.toISOString().slice(0, 10);
 }
 
-export async function loadDefaultTemplate(operatorId: string, passageDate?: string | null): Promise<void> {
-  const totalWeeks = DEFAULT_ROADMAP_ITEMS.reduce((max, it) => Math.max(max, it.target_week), 0);
-  const items = DEFAULT_ROADMAP_ITEMS.map((item, i) => ({
+/**
+ * Compute the available preparation window in weeks between today and the passage date.
+ * Clamped to MIN_ROADMAP_WEEKS so the schedule structure (start anchors + end anchors + flex)
+ * always has room. Caller can detect a clamped result by comparing to the raw diff.
+ */
+export function computeWeeksUntilPassage(passageDate: string, today: Date = new Date()): number {
+  const passage = new Date(`${passageDate}T00:00:00Z`);
+  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const diffDays = Math.max(0, Math.round((passage.getTime() - todayUtc.getTime()) / 86400000));
+  const weeks = Math.ceil(diffDays / 7);
+  return Math.max(MIN_ROADMAP_WEEKS, weeks);
+}
+
+/**
+ * Map template items into concrete week numbers for a given window length.
+ * - "start"  → week (1 + offset)
+ * - "end"    → week (totalWeeks - offset)
+ * - "flex"   → distributed evenly across the middle window; items sharing a flex_cluster land on the same week.
+ */
+export function assignWeekNumbers(
+  items: RoadmapTemplateItem[],
+  totalWeeks: number,
+): (RoadmapTemplateItem & { target_week: number })[] {
+  const startWindowEnd = 4;                   // phase 1 always weeks 1–4
+  const endWindowStart = totalWeeks - 2;      // last 3 weeks reserved for end anchors (offsets 0,1,2)
+  const flexStart = startWindowEnd + 1;
+  const flexEnd = Math.max(flexStart, endWindowStart - 1);
+  const flexSpan = Math.max(1, flexEnd - flexStart + 1);
+
+  const flexClusters = [
+    ...new Set(items.filter((i) => i.anchor === "flex").map((i) => i.flex_cluster ?? 0)),
+  ].sort((a, b) => a - b);
+
+  const clusterToWeek = new Map<number, number>();
+  flexClusters.forEach((c, idx) => {
+    let week: number;
+    if (flexClusters.length === 1) {
+      week = flexStart;
+    } else {
+      week = flexStart + Math.round((idx * (flexSpan - 1)) / (flexClusters.length - 1));
+    }
+    clusterToWeek.set(c, Math.min(flexEnd, Math.max(flexStart, week)));
+  });
+
+  return items.map((item) => {
+    let target_week: number;
+    if (item.anchor === "start") target_week = 1 + item.offset;
+    else if (item.anchor === "end") target_week = totalWeeks - item.offset;
+    else target_week = clusterToWeek.get(item.flex_cluster ?? 0) ?? flexStart;
+    return { ...item, target_week };
+  });
+}
+
+export async function loadDefaultTemplate(operatorId: string, passageDate: string): Promise<void> {
+  const totalWeeks = computeWeeksUntilPassage(passageDate);
+  const assigned = assignWeekNumbers(DEFAULT_ROADMAP_ITEMS, totalWeeks);
+  const items = assigned.map((item, i) => ({
     operator_id: operatorId,
     phase: item.phase,
     item_type: "standard" as RoadmapItemType,
@@ -88,7 +145,7 @@ export async function loadDefaultTemplate(operatorId: string, passageDate?: stri
     description: item.description,
     icon: item.icon,
     target_week: item.target_week,
-    target_date: passageDate ? computeTargetDate(passageDate, item.target_week, totalWeeks) : null,
+    target_date: computeTargetDate(passageDate, item.target_week, totalWeeks),
     sort_order: i,
   }));
   const { error } = await supabase.from("roadmap_items").insert(items as never);
