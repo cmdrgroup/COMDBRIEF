@@ -50,19 +50,30 @@ const CommandDashboard = () => {
     mutationFn: async ({ id, date }: { id: string; date: string | null }) => {
       await updateOperatorPassageDate(id, date);
       if (date) {
-        const created = await generateRoadmapForOperator(id, date);
-        if (!created) await reanchorRoadmapDates(id, date);
-        return { date, created };
+        const result = await generateRoadmapForOperator(id, date);
+        if (result === "exists") await reanchorRoadmapDates(id, date);
+        return { date, result };
       }
-      return { date: null, created: false };
+      return { date: null, result: "exists" as const };
     },
-    onSuccess: (result) => {
+    onSuccess: (r) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
-      if (!result.date) toast.success("Passage date cleared");
-      else if (result.created) toast.success("Roadmap generated");
+      if (!r.date) toast.success("Passage date cleared");
+      else if (r.result === "created") toast.success("Roadmap generated");
+      else if (r.result === "deferred") toast.warning(`Passage date is more than ${ROADMAP_AUTOGEN_MAX_WEEKS} weeks out — roadmap deferred for manual delivery`);
       else toast.success("Roadmap dates updated");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update passage date"),
+  });
+
+  const forceGenerateMutation = useMutation({
+    mutationFn: async ({ id, date }: { id: string; date: string }) => forceGenerateRoadmap(id, date),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["operators"] });
+      queryClient.invalidateQueries({ queryKey: ["roadmap_items"] });
+      toast.success(created ? "Roadmap generated" : "Roadmap already exists");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to generate roadmap"),
   });
 
   const stats = {
