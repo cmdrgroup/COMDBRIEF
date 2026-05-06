@@ -204,7 +204,9 @@ export function assignWeekNumbers(
 
 export async function loadDefaultTemplate(operatorId: string, passageDate: string): Promise<void> {
   const totalWeeks = computeWeeksUntilPassage(passageDate);
-  const assigned = assignWeekNumbers(DEFAULT_ROADMAP_ITEMS, totalWeeks);
+  const charges = await getChargeItems(operatorId);
+  const clearingItems = buildClearingSessionItems(charges, totalWeeks);
+  const assigned = assignWeekNumbers([...DEFAULT_ROADMAP_ITEMS, ...clearingItems], totalWeeks);
   const items = assigned.map((item, i) => ({
     operator_id: operatorId,
     phase: item.phase,
