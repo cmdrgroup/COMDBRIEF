@@ -38,8 +38,7 @@ export const DEFAULT_ROADMAP_ITEMS: RoadmapTemplateItem[] = [
   { phase: "phase_1", title: "Submit First SITREP", description: "Current state of business, home, and self. Honest. No performance.", icon: "📝", anchor: "start", offset: 1 },
   { phase: "phase_1", title: "Complete Physical Baseline", description: "Record: body weight, resting heart rate, push-ups (2 min), sit-ups (2 min), 2.4km run time.", icon: "💪", anchor: "start", offset: 1 },
   // Week 3 (offset 2)
-  { phase: "phase_1", title: "Learn the Charge-Clearing Framework", description: "Review the 10 tools, the process, the principle.", icon: "📖", anchor: "start", offset: 2 },
-  { phase: "phase_1", title: "First Clearing Session (BIG #1)", description: "Take the highest-rated charge from your inventory. Run the full protocol.", icon: "🎯", anchor: "start", offset: 2 },
+  { phase: "phase_1", title: "Learn the Charge-Clearing Framework", description: "Review the 10 tools, the process, the principle.", icon: "📖", anchor: "start", offset: 1 },
   { phase: "phase_1", title: "Record Clearing Outcome", description: "Log: charge type, target, initial rating, final rating, new belief, committed action.", icon: "📊", anchor: "start", offset: 2 },
   // Week 4 (offset 3)
   { phase: "phase_1", title: "Complete Command Foundations Assessment", description: "Self-assessment against the Three Gates: responsibility, avoidance awareness, submission to structure.", icon: "🏛️", anchor: "start", offset: 3 },
