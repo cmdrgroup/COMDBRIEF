@@ -86,7 +86,13 @@ Charges that virtually every man in this profile carries, even if the intake dat
 
 8. DO NOT soften charges. If the data suggests he resents his wife — say it. The man needs to see the truth on paper.
 
-9. After all charges, generate 3-5 BLIND SPOTS — charges the man almost certainly carries but would never admit on an intake form. Frame these as questions.`;
+9. After all charges, generate 3-5 BLIND SPOTS — charges the man almost certainly carries but would never admit on an intake form. Frame these as questions.
+
+10. ALWAYS populate the "top_charges" array with EXACTLY 3 entries (rank 1, 2, 3) — these are the same BIG #1/#2/#3 charges flagged by priorityRank, but restated in machine-readable form so the roadmap generator can slot them into clearing weeks 2/3/4. Each entry MUST include:
+   - rank: 1, 2, or 3
+   - tool: the human-readable tool/category label (e.g. "Anger", "Resentment", "Frustration", "Fear & Anxiety", "Self-Doubt", "Guilt & Shame", "Judgment", "Infatuation", "Depression", "Grief & Loss")
+   - charge_text: the EXACT statement string from the matching charge in the "charges" array
+   - rating: the integer chargeLevel (1-10) of that charge`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
