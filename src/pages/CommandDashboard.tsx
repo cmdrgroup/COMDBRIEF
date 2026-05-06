@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Eye, Check, Users, Clock, CheckCircle2, AlertCircle, LogOut, Phone, Calendar as CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { getAllOperators, createOperator, getCompletedCount, updateOperatorPassageDate, type Operator } from "@/lib/operators";
+import { generateRoadmapForOperator, reanchorRoadmapDates } from "@/lib/roadmap";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import OperatorDetail from "@/components/dashboard/OperatorDetail";
 import DeploymentCallScreen from "@/components/dashboard/DeploymentCallScreen";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -45,8 +47,22 @@ const CommandDashboard = () => {
   });
 
   const passageDateMutation = useMutation({
-    mutationFn: ({ id, date }: { id: string; date: string | null }) => updateOperatorPassageDate(id, date),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["operators"] }),
+    mutationFn: async ({ id, date }: { id: string; date: string | null }) => {
+      await updateOperatorPassageDate(id, date);
+      if (date) {
+        const created = await generateRoadmapForOperator(id, date);
+        if (!created) await reanchorRoadmapDates(id, date);
+        return { date, created };
+      }
+      return { date: null, created: false };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["operators"] });
+      if (!result.date) toast.success("Passage date cleared");
+      else if (result.created) toast.success("Roadmap generated");
+      else toast.success("Roadmap dates updated");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update passage date"),
   });
 
   const stats = {

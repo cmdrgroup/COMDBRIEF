@@ -167,9 +167,21 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
                           </p>
                         )}
                       </div>
-                      {item.target_week && (
-                        <span className="font-mono text-[10px] text-slate-grey flex-shrink-0">W{item.target_week}</span>
-                      )}
+                      {(() => {
+                        const td = (item as typeof item & { target_date?: string | null }).target_date;
+                        if (td) {
+                          const d = new Date(`${td}T00:00:00`);
+                          return (
+                            <span className="font-mono text-[10px] text-slate-grey flex-shrink-0 text-right">
+                              Week of<br />{d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                          );
+                        }
+                        if (item.target_week) {
+                          return <span className="font-mono text-[10px] text-slate-grey flex-shrink-0">W{item.target_week}</span>;
+                        }
+                        return null;
+                      })()}
                       {isCommand && item.item_type === "personalised" && (
                         <button onClick={() => deleteMutation.mutate(item.id)} className="p-1 text-gunmetal hover:text-warning-red transition-colors">
                           <Trash2 className="w-3 h-3" />
