@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { DEFAULT_ROADMAP_ITEMS, type RoadmapTemplateItem } from "@/lib/roadmapTemplate";
+import { CHARGE_CATEGORIES, type ChargeItem, getChargeItems } from "@/lib/chargeItems";
 export { DEFAULT_ROADMAP_ITEMS } from "@/lib/roadmapTemplate";
 
 /** Minimum window: 4 (phase 1) + 3 end-anchor weeks + 1 flex slot. */
@@ -17,6 +18,73 @@ export const PHASE_INFO = [
   { key: "phase_3" as const, label: "EDGE & INTEGRATION", weeks: "Weeks 9–11", number: 3 },
   { key: "phase_4" as const, label: "DEPLOYMENT", weeks: "Week 12", number: 4 },
 ];
+
+/**
+ * Build personalised clearing-session roadmap items from an operator's charge inventory.
+ * Slot rules:
+ *  - Week 1 = orientation (no clearing)
+ *  - Week 2 = BIG #1, Week 3 = BIG #2, Week 4 = BIG #3 (top charge from each of the top 3 tools)
+ *  - Weeks 5..(totalWeeks-1) = next highest-rated charges, round-robin across remaining tools
+ *  - Final week = deployment prep (no clearing)
+ * Each item carries the specific charge text and tool name.
+ */
+export function buildClearingSessionItems(
+  charges: ChargeItem[],
+  totalWeeks: number,
+): RoadmapTemplateItem[] {
+  const slots = Math.max(0, totalWeeks - 2);
+  if (slots === 0 || charges.length === 0) return [];
+
+  const byCategory = new Map<string, ChargeItem[]>();
+  for (const c of charges) {
+    if (!byCategory.has(c.category)) byCategory.set(c.category, []);
+    byCategory.get(c.category)!.push(c);
+  }
+  for (const list of byCategory.values()) {
+    list.sort((a, b) => (b.charge_level ?? 0) - (a.charge_level ?? 0));
+  }
+
+  const rankedCategories = [...byCategory.entries()]
+    .map(([cat, list]) => ({ cat, top: list[0]?.charge_level ?? 0 }))
+    .sort((a, b) => b.top - a.top)
+    .map((x) => x.cat);
+
+  const consumed = new Map<string, number>();
+  const picks: ChargeItem[] = [];
+  let safety = 0;
+  while (picks.length < slots && safety++ < (slots + 1) * (rankedCategories.length + 1)) {
+    let picked = false;
+    for (const cat of rankedCategories) {
+      const list = byCategory.get(cat)!;
+      const idx = consumed.get(cat) ?? 0;
+      if (idx >= list.length) continue;
+      picks.push(list[idx]);
+      consumed.set(cat, idx + 1);
+      picked = true;
+      if (picks.length >= slots) break;
+    }
+    if (!picked) break;
+  }
+
+  const categoryLabel = (key: string) =>
+    CHARGE_CATEGORIES.find((c) => c.key === key)?.label ?? key;
+
+  return picks.map((charge, i) => {
+    const week = 2 + i;
+    const offset = week - 1;
+    const phase: RoadmapPhase = week <= 4 ? "phase_1" : week <= totalWeeks - 3 ? "phase_2" : "phase_3";
+    const tool = categoryLabel(charge.category);
+    const big = i < 3 ? `BIG #${i + 1} — ` : "";
+    return {
+      phase,
+      title: `${big}${tool} Clearing: ${charge.statement}`,
+      description: `Run the ${tool} clearing protocol on this charge. Initial rating ${charge.charge_level ?? 0}/10. Log the outcome.`,
+      icon: "🎯",
+      anchor: "start",
+      offset,
+    };
+  });
+}
 
 
 export async function getRoadmapItems(operatorId: string): Promise<RoadmapItem[]> {
@@ -136,7 +204,9 @@ export function assignWeekNumbers(
 
 export async function loadDefaultTemplate(operatorId: string, passageDate: string): Promise<void> {
   const totalWeeks = computeWeeksUntilPassage(passageDate);
-  const assigned = assignWeekNumbers(DEFAULT_ROADMAP_ITEMS, totalWeeks);
+  const charges = await getChargeItems(operatorId);
+  const clearingItems = buildClearingSessionItems(charges, totalWeeks);
+  const assigned = assignWeekNumbers([...DEFAULT_ROADMAP_ITEMS, ...clearingItems], totalWeeks);
   const items = assigned.map((item, i) => ({
     operator_id: operatorId,
     phase: item.phase,
