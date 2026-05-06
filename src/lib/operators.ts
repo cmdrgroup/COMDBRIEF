@@ -60,11 +60,15 @@ export async function overrideStep(operatorId: string, stepNumber: number) {
 }
 
 export async function updateOperatorPassageDate(operatorId: string, date: string | null) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("operators")
     .update({ passage_date: date } as never)
-    .eq("id", operatorId);
+    .eq("id", operatorId)
+    .select("id");
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Update blocked — your account does not have admin permissions. Log out and back in, or contact support.");
+  }
 }
 
 export function getCompletedSteps(operator: Operator): boolean[] {
