@@ -47,8 +47,22 @@ const CommandDashboard = () => {
   });
 
   const passageDateMutation = useMutation({
-    mutationFn: ({ id, date }: { id: string; date: string | null }) => updateOperatorPassageDate(id, date),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["operators"] }),
+    mutationFn: async ({ id, date }: { id: string; date: string | null }) => {
+      await updateOperatorPassageDate(id, date);
+      if (date) {
+        const created = await generateRoadmapForOperator(id, date);
+        if (!created) await reanchorRoadmapDates(id, date);
+        return { date, created };
+      }
+      return { date: null, created: false };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["operators"] });
+      if (!result.date) toast.success("Passage date cleared");
+      else if (result.created) toast.success("Roadmap generated");
+      else toast.success("Roadmap dates updated");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update passage date"),
   });
 
   const stats = {
