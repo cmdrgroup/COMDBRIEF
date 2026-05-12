@@ -136,12 +136,17 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   // AI generation mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
+      // First try verbatim parse for pre-formatted charge lists
+      const verbatim = parseFormattedChargeList(intakeText);
+      if (verbatim && verbatim.length > 0) {
+        return { charges: verbatim, verbatim: true as const };
+      }
+
       // Parse intake text as key-value pairs or raw text
       let intakeData: Record<string, string>;
       try {
         intakeData = JSON.parse(intakeText);
       } catch {
-        // Treat as free-text intake
         intakeData = { raw_intake: intakeText };
       }
 
@@ -151,12 +156,16 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
 
       if (error) throw new Error(error.message || "Failed to generate charges");
       if (data?.error) throw new Error(data.error);
-      return data as { charges: DraftCharge[] };
+      return { ...(data as { charges: DraftCharge[] }), verbatim: false as const };
     },
     onSuccess: (data) => {
       setDrafts(data.charges.map(c => ({ ...c, accepted: true })));
+      setVerbatimCount(data.verbatim ? data.charges.length : null);
       setShowDraftReview(true);
       setShowIntakeForm(false);
+      if (data.verbatim) {
+        toast({ title: "Imported verbatim", description: `${data.charges.length} charges parsed from pasted list (no AI).` });
+      }
     },
     onError: (err: Error) => {
       toast({ title: "Generation failed", description: err.message, variant: "destructive" });
