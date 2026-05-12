@@ -1,32 +1,59 @@
-## Rebuild roadmap when passage date changes
+## Goal
 
-**Problem:** `reanchorRoadmapDates()` only shifts existing item dates against a frozen `totalWeeks` derived from the old roadmap. When you push the passage date out (or in), the phase structure (Weeks 1–4 / 5–8 / 9–11 / 12) and the underlying `target_week` values stay frozen — only `target_date` slides — so weeks anchored near the start can land before today and the four-phase split no longer matches the new window.
+When an admin pastes a pre-formatted charge list (e.g. Garry's 84 statements with category headings and emojis), import every statement exactly as pasted into the correct category — no AI rewriting, no dropped lines.
 
-**Fix:** When the passage date changes on an operator who already has a roadmap, rebuild the roadmap against the new window so `totalWeeks`, phase assignments, and per-item `target_date` are all recomputed.
+## Behaviour
 
-### Behaviour
+In `ChargeListManager.tsx`, the "Generate" button currently always calls the `generate-charges` edge function. We will make it route based on what was pasted:
 
-In `passageDateMutation` (`src/pages/CommandDashboard.tsx`), when a roadmap already exists and the date changes:
-1. Capture which item titles are currently `completed` for that operator.
-2. Delete all existing `roadmap_items` for the operator.
-3. Run `loadDefaultTemplate(operatorId, newPassageDate)` — this recomputes `totalWeeks` via `computeWeeksUntilPassage`, re-assigns weeks, re-derives `target_date`, and re-inserts everything.
-4. Re-mark items whose title matches a previously-completed item as `completed` (best-effort preservation of progress).
-5. Toast: "Roadmap rebuilt for new passage date" so it's clear the schedule was regenerated, not just shifted.
+1. **JSON intake** → existing AI flow (unchanged).
+2. **Formatted charge list** (heading-based, see detector below) → new verbatim parser, skip AI entirely. Drafts open in the existing review panel so the admin can still toggle/keep/delete before approving.
+3. **Free-text intake notes** (no recognisable headings) → existing AI flow (unchanged).
 
-If no roadmap exists yet, behaviour is unchanged: `generateRoadmapForOperator` runs (creates or defers based on `ROADMAP_AUTOGEN_MAX_WEEKS`).
+## Detector
 
-### Implementation
+Treat the paste as a formatted charge list when it contains 2+ category headings. A heading line matches one of the 10 categories from `CHARGE_CATEGORIES` (case-insensitive) optionally preceded by its emoji and/or extra words like "&", "and". Examples that must match:
+- `😬 FEAR & ANXIETY`
+- `FEAR AND ANXIETY`
+- `Self Doubt`
+- `💔 GRIEF & LOSS`
 
-1. **`src/lib/roadmap.ts`** — add `rebuildRoadmapForOperator(operatorId, passageDate)`:
-   - Fetch existing items, collect titles where `completed = true`.
-   - `delete from roadmap_items where operator_id = ...`.
-   - Call `loadDefaultTemplate(operatorId, passageDate)`.
-   - Re-fetch new items, update `completed = true, completed_at = now()` for any whose `title` matches the captured set.
-   - Returns `"rebuilt"` so the caller can toast appropriately.
+Mapping table (label → category key): Anger → `anger`, Resentment → `resentment`, Frustration → `frustration`, Fear & Anxiety / Fear and Anxiety → `fear_anxiety`, Self Doubt / Self-Doubt → `self_doubt`, Guilt & Shame → `guilt_shame`, Judgment → `judgment`, Infatuation → `infatuation`, Depression → `depression`, Grief & Loss → `grief_loss`.
 
-2. **`src/pages/CommandDashboard.tsx`** — in `passageDateMutation.mutationFn`, replace the `reanchorRoadmapDates` branch with `rebuildRoadmapForOperator`. Update the success toast for the new `"rebuilt"` result. Also invalidate the `roadmap_items` query so any open OperatorDetail/Roadmap view refreshes.
+## Verbatim parser
 
-### Notes
-- Title-based completion preservation is intentionally simple. Identical titles (e.g. multiple "Submit SITREP" entries) match by title only, so completion may collapse onto the first matching slot. That is acceptable — the alternative (matching by phase + target_week) would lose completions whenever the week shifts.
-- Custom items added by Command via `addRoadmapItem` will be **lost** in the rebuild because they aren't part of the template. If you've been adding bespoke items, tell me and we'll preserve them by re-inserting non-standard items after the rebuild.
-- Weekly focus rows (`weekly_focus`) reference `week_number` directly. If `totalWeeks` changes, week numbers in those rows may now point to weeks that don't exist or have shifted meaning. Out of scope for this fix; flag if you want them cleared on rebuild too.
+Walk the pasted text line by line:
+
+1. Trim each line. Skip blank lines.
+2. If the line matches a category heading → switch the "current category" to that key.
+3. Otherwise, if there is a current category, treat the line as a charge statement:
+   - Strip leading bullets/numbers (`- `, `* `, `• `, `1. `).
+   - Keep the statement text exactly as pasted (no rewording, no prefix injection).
+   - Default `chargeLevel` to `7` (mid-high; admin can adjust in review).
+   - Default `domain` to `both`, `source` to `stated`.
+   - Append to the drafts array.
+4. Lines before the first heading are ignored (e.g. preamble).
+
+No statement is dropped, merged, or summarised. The count of drafts must equal the count of non-heading, non-blank lines after the first heading.
+
+## UI changes
+
+- Same single "Generate" button. After parsing, show drafts in the existing review panel exactly like AI output.
+- Add a small toast/info line above the review list when verbatim mode was used: `"Imported {N} charges verbatim from pasted list"` so the admin can sanity-check the count against their source.
+- Update the textarea placeholder to mention the third supported format: a charge list with category headings.
+
+## Files to change
+
+- `src/components/dashboard/ChargeListManager.tsx`
+  - Add `parseFormattedChargeList(text)` helper (pure function, returns `DraftCharge[]` or `null` if not a formatted list).
+  - In `generateMutation.mutationFn`, try the parser first. If it returns a non-empty array, set drafts directly and return without calling the edge function. Otherwise fall through to the existing JSON / free-text AI path.
+  - Track whether the last batch was verbatim (local state) to render the count notice in the review panel.
+  - Update placeholder text.
+
+No edge function, schema, or roadmap code changes.
+
+## Out of scope
+
+- Auto-detecting `priorityRank` / Big #1-#3 from pasted text (admin sets these in review as today).
+- Parsing blind-spot questions from pasted text (rare in admin pastes; admin can add manually).
+- Changing the AI prompt or its handling of free-text intake.

@@ -20,6 +20,66 @@ interface ChargeListManagerProps {
   onClose: () => void;
 }
 
+// Heading label -> category key
+const CATEGORY_HEADING_MAP: Array<{ patterns: RegExp[]; key: string }> = [
+  { key: "fear_anxiety", patterns: [/^fear\s*(&|and)\s*anxiety$/i, /^fear$/i, /^anxiety$/i] },
+  { key: "self_doubt", patterns: [/^self[\s-]?doubt$/i] },
+  { key: "guilt_shame", patterns: [/^guilt\s*(&|and)\s*shame$/i, /^guilt$/i, /^shame$/i] },
+  { key: "grief_loss", patterns: [/^grief\s*(&|and)\s*loss$/i, /^grief$/i, /^loss$/i] },
+  { key: "anger", patterns: [/^anger$/i] },
+  { key: "resentment", patterns: [/^resentment$/i] },
+  { key: "frustration", patterns: [/^frustration$/i] },
+  { key: "judgment", patterns: [/^judgment$/i, /^judgement$/i] },
+  { key: "infatuation", patterns: [/^infatuation$/i] },
+  { key: "depression", patterns: [/^depression$/i] },
+];
+
+function matchHeading(line: string): string | null {
+  // Strip emoji/symbols/punctuation, keep letters/spaces/&/-
+  const cleaned = line
+    .replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}]/gu, "")
+    .replace(/[^\p{L}\s&-]/gu, "")
+    .trim()
+    .replace(/\s+/g, " ");
+  if (!cleaned || cleaned.length > 30) return null;
+  for (const { patterns, key } of CATEGORY_HEADING_MAP) {
+    if (patterns.some(p => p.test(cleaned))) return key;
+  }
+  return null;
+}
+
+function parseFormattedChargeList(text: string): DraftCharge[] | null {
+  const lines = text.split(/\r?\n/);
+  const drafts: DraftCharge[] = [];
+  let currentCategory: string | null = null;
+  let headingCount = 0;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const headingKey = matchHeading(line);
+    if (headingKey) {
+      currentCategory = headingKey;
+      headingCount++;
+      continue;
+    }
+    if (!currentCategory) continue;
+    const statement = line.replace(/^([-*•]|\d+[.)])\s+/, "").trim();
+    if (!statement) continue;
+    drafts.push({
+      category: currentCategory,
+      statement,
+      chargeLevel: 7,
+      inferred: false,
+      accepted: true,
+    });
+  }
+
+  if (headingCount < 2 || drafts.length === 0) return null;
+  return drafts;
+}
+
+
 const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListManagerProps) => {
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<string>(CHARGE_CATEGORIES[0].key);
@@ -32,6 +92,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   const [intakeText, setIntakeText] = useState("");
   const [drafts, setDrafts] = useState<DraftCharge[]>([]);
   const [showDraftReview, setShowDraftReview] = useState(false);
+  const [verbatimCount, setVerbatimCount] = useState<number | null>(null);
 
   const { data: items = [] } = useQuery({
     queryKey: ["charge_items", operatorId],
@@ -75,12 +136,17 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   // AI generation mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
+      // First try verbatim parse for pre-formatted charge lists
+      const verbatim = parseFormattedChargeList(intakeText);
+      if (verbatim && verbatim.length > 0) {
+        return { charges: verbatim, verbatim: true as const };
+      }
+
       // Parse intake text as key-value pairs or raw text
       let intakeData: Record<string, string>;
       try {
         intakeData = JSON.parse(intakeText);
       } catch {
-        // Treat as free-text intake
         intakeData = { raw_intake: intakeText };
       }
 
@@ -90,12 +156,16 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
 
       if (error) throw new Error(error.message || "Failed to generate charges");
       if (data?.error) throw new Error(data.error);
-      return data as { charges: DraftCharge[] };
+      return { ...(data as { charges: DraftCharge[] }), verbatim: false as const };
     },
     onSuccess: (data) => {
       setDrafts(data.charges.map(c => ({ ...c, accepted: true })));
+      setVerbatimCount(data.verbatim ? data.charges.length : null);
       setShowDraftReview(true);
       setShowIntakeForm(false);
+      if (data.verbatim) {
+        toast({ title: "Imported verbatim", description: `${data.charges.length} charges parsed from pasted list (no AI).` });
+      }
     },
     onError: (err: Error) => {
       toast({ title: "Generation failed", description: err.message, variant: "destructive" });
@@ -207,11 +277,11 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
         {showIntakeForm && !showDraftReview && (
           <div className="mb-4 p-4 bg-background rounded-sm border border-accent/30 space-y-3">
             <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">Paste Intake Form Data</h4>
-            <p className="text-xs text-slate-grey">Paste the operator's intake form answers below. Can be JSON or free-text.</p>
+            <p className="text-xs text-slate-grey">Paste the operator's intake form answers below. Supports: JSON, free-text notes, or a pre-formatted charge list with category headings (imported verbatim, no AI).</p>
             <textarea
               value={intakeText}
               onChange={e => setIntakeText(e.target.value)}
-              placeholder={`{\n  "biggest_challenge": "Scaling my business past $500k",\n  "stress_level": "8/10",\n  "what_keeps_you_up": "Fear of going broke"\n}\n\nOr paste free-text intake notes...`}
+              placeholder={`Pre-formatted list (imported verbatim):\n😬 FEAR & ANXIETY\nI am scared of...\nI worry about...\n\n😡 ANGER\nI am angry that...\n\n— OR —\n\nJSON / free-text intake notes (AI generates charges)`}
               className="w-full h-40 bg-tactical-steel border border-gunmetal rounded-sm px-3 py-2 text-sm text-steel-white font-mono focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
@@ -242,7 +312,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
             <div className="p-4 bg-background rounded-sm border border-accent/30 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">
-                  Review AI-Generated Charges ({drafts.filter(d => d.accepted).length}/{drafts.length} selected)
+                  {verbatimCount !== null ? `Review Imported Charges` : `Review AI-Generated Charges`} ({drafts.filter(d => d.accepted).length}/{drafts.length} selected)
                 </h4>
                 <div className="flex gap-2">
                   <button
@@ -256,6 +326,9 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
                 </div>
               </div>
               <p className="text-xs text-slate-grey">Review and toggle charges before approving. Deselect any you don't want.</p>
+              {verbatimCount !== null && (
+                <p className="text-xs text-command-gold font-mono">Imported {verbatimCount} charges verbatim from pasted list — no AI rewriting.</p>
+              )}
 
               {CHARGE_CATEGORIES.map(cat => {
                 const catDrafts = drafts.filter(d => d.category === cat.key);
