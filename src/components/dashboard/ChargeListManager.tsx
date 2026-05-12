@@ -306,14 +306,77 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
 
         {/* AI Generate Button */}
         {!showDraftReview && (
-          <div className="mb-4 flex gap-2">
+          <div className="mb-4 flex flex-wrap gap-2">
             <button
-              onClick={() => setShowIntakeForm(!showIntakeForm)}
+              onClick={() => { setShowIntakeForm(!showIntakeForm); setShowCategoryPaste(false); }}
               className="flex items-center gap-2 px-3 py-2 bg-accent/20 border border-accent/30 text-accent rounded-sm hover:bg-accent/30 transition-colors font-heading text-xs uppercase tracking-widest"
             >
               <Sparkles className="w-4 h-4" />
               Generate from Intake
             </button>
+            <button
+              onClick={() => { setShowCategoryPaste(!showCategoryPaste); setShowIntakeForm(false); }}
+              className="flex items-center gap-2 px-3 py-2 bg-command-gold/20 border border-command-gold/30 text-command-gold rounded-sm hover:bg-command-gold/30 transition-colors font-heading text-xs uppercase tracking-widest"
+            >
+              <Plus className="w-4 h-4" />
+              Paste by Category
+            </button>
+          </div>
+        )}
+
+        {/* Paste by Category Panel */}
+        {showCategoryPaste && !showDraftReview && (
+          <div className="mb-4 p-4 bg-background rounded-sm border border-command-gold/30 space-y-3">
+            <h4 className="font-mono text-[10px] uppercase tracking-widest text-command-gold">Paste Charges by Category</h4>
+            <p className="text-xs text-slate-grey">One charge per line. Every non-blank line becomes a charge in that category — no AI, no parsing, no dropped lines.</p>
+            <div className="space-y-2">
+              {CHARGE_CATEGORIES.map(cat => {
+                const count = countCategoryLines(categoryPastes[cat.key]);
+                return (
+                  <div key={cat.key} className="border border-gunmetal/30 rounded-sm">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-tactical-steel/30">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{cat.emoji}</span>
+                        <span className="font-heading text-xs uppercase tracking-wider text-steel-white">{cat.label}</span>
+                      </div>
+                      <span className="font-mono text-[10px] text-command-gold">{count} {count === 1 ? "line" : "lines"}</span>
+                    </div>
+                    <textarea
+                      value={categoryPastes[cat.key]}
+                      onChange={e => setCategoryPastes({ ...categoryPastes, [cat.key]: e.target.value })}
+                      placeholder={`One ${cat.label.toLowerCase()} charge per line...`}
+                      className="w-full h-24 bg-tactical-steel border-0 px-3 py-2 text-sm text-steel-white font-mono focus:outline-none resize-y"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <label className="flex items-center gap-2 text-xs text-slate-grey">
+                Default level
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={defaultPasteLevel}
+                  onChange={e => setDefaultPasteLevel(Math.min(10, Math.max(1, parseInt(e.target.value) || 7)))}
+                  className="w-16 bg-tactical-steel border border-gunmetal rounded-sm px-2 py-1 text-sm text-steel-white font-mono focus:outline-none focus:border-command-gold"
+                />
+              </label>
+              <button
+                onClick={importByCategory}
+                disabled={totalPasteLines === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-command-gold text-background font-heading text-xs uppercase tracking-widest rounded-sm hover:bg-command-gold/90 disabled:opacity-50 transition-colors"
+              >
+                <Check className="w-4 h-4" /> Import {totalPasteLines} {totalPasteLines === 1 ? "charge" : "charges"}
+              </button>
+              <button
+                onClick={() => setShowCategoryPaste(false)}
+                className="px-4 py-2 text-xs text-slate-grey hover:text-steel-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
