@@ -76,6 +76,13 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   const getPhaseItems = (phase: string) => items.filter(i => i.phase === phase);
+  const getPhaseWeeksLabel = (phase: string) => {
+    const phaseItems = getPhaseItems(phase).filter(i => i.target_week != null);
+    if (phaseItems.length === 0) return "—";
+    const min = Math.min(...phaseItems.map(i => i.target_week!));
+    const max = Math.max(...phaseItems.map(i => i.target_week!));
+    return min === max ? `Week ${min}` : `Weeks ${min}–${max}`;
+  };
   const getPhaseProgress = (phase: string) => {
     const phaseItems = getPhaseItems(phase);
     if (phaseItems.length === 0) return 0;
@@ -123,7 +130,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
                 {!accessible && <Lock className="w-4 h-4 text-slate-grey" />}
                 <div className="text-left">
                   <span className="font-heading text-sm uppercase tracking-wider text-steel-white">Phase {phase.number}: {phase.label}</span>
-                  <p className="font-mono text-[10px] text-slate-grey mt-0.5">{phase.weeks}</p>
+                  <p className="font-mono text-[10px] text-slate-grey mt-0.5">{getPhaseWeeksLabel(phase.key)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
