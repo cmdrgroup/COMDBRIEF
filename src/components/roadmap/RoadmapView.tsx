@@ -88,6 +88,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
     if (phaseItems.length === 0) return 0;
     return Math.round((phaseItems.filter(i => i.completed).length / phaseItems.length) * 100);
   };
+  const totalWeeks = items.reduce((max, it) => Math.max(max, it.target_week ?? 0), 0) || 12;
 
   const isPhaseAccessible = (phaseKey: string) => {
     if (isCommand) return true;
@@ -109,7 +110,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
           <div className="h-full bg-command-gold rounded-full transition-all" style={{ width: `${overallProgress}%` }} />
         </div>
         <p className="font-mono text-[10px] text-slate-grey mt-2">
-          {completedItems} of {totalItems} items completed · Week {currentWeek} of {items.reduce((max, it) => Math.max(max, it.target_week ?? 0), 0) || 12}
+          {completedItems} of {totalItems} items completed · Week {currentWeek} of {totalWeeks}
         </p>
       </div>
 
@@ -209,7 +210,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
                         <input value={newDescription} onChange={e => setNewDescription(e.target.value)} placeholder="Description (optional)..." className="w-full bg-tactical-steel border border-gunmetal rounded-sm px-3 py-2 text-xs text-steel-white focus:outline-none focus:border-command-gold" />
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-[10px] text-slate-grey">Target Week:</span>
-                          <input type="number" min={1} max={12} value={newWeek} onChange={e => setNewWeek(Number(e.target.value))} className="w-14 bg-tactical-steel border border-gunmetal rounded-sm px-2 py-1 text-xs text-steel-white text-center focus:outline-none focus:border-command-gold" />
+                          <input type="number" min={1} max={totalWeeks} value={newWeek} onChange={e => setNewWeek(Number(e.target.value))} className="w-14 bg-tactical-steel border border-gunmetal rounded-sm px-2 py-1 text-xs text-steel-white text-center focus:outline-none focus:border-command-gold" />
                           <div className="flex-1" />
                           <button onClick={() => newTitle.trim() && addMutation.mutate(phase.key)} disabled={!newTitle.trim()} className="px-3 py-1.5 bg-command-gold text-background text-xs font-heading uppercase tracking-widest rounded-sm disabled:opacity-50">Add</button>
                           <button onClick={() => setAddingToPhase(null)} className="px-3 py-1.5 text-xs text-slate-grey">Cancel</button>
