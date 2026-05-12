@@ -326,6 +326,9 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
                 </div>
               </div>
               <p className="text-xs text-slate-grey">Review and toggle charges before approving. Deselect any you don't want.</p>
+              {verbatimCount !== null && (
+                <p className="text-xs text-command-gold font-mono">Imported {verbatimCount} charges verbatim from pasted list — no AI rewriting.</p>
+              )}
 
               {CHARGE_CATEGORIES.map(cat => {
                 const catDrafts = drafts.filter(d => d.category === cat.key);
