@@ -1,59 +1,50 @@
 ## Goal
 
-When an admin pastes a pre-formatted charge list (e.g. Garry's 84 statements with category headings and emojis), import every statement exactly as pasted into the correct category — no AI rewriting, no dropped lines.
+Stop relying on heading detection. Give the admin a textarea per category, paste lines, hit one button, every line becomes a charge in that category — no AI, no parsing ambiguity, no dropped statements.
 
-## Behaviour
+## Why
 
-In `ChargeListManager.tsx`, the "Generate" button currently always calls the `generate-charges` edge function. We will make it route based on what was pasted:
+The current verbatim parser depends on detecting category headings in a single big paste. Garry's paste has emoji + extra wording that's slipping past the regex, so only ~59 of 84 lines land. A per-category input removes that guessing entirely: one line in = one charge out.
 
-1. **JSON intake** → existing AI flow (unchanged).
-2. **Formatted charge list** (heading-based, see detector below) → new verbatim parser, skip AI entirely. Drafts open in the existing review panel so the admin can still toggle/keep/delete before approving.
-3. **Free-text intake notes** (no recognisable headings) → existing AI flow (unchanged).
+## UX
 
-## Detector
+In `ChargeListManager.tsx`, replace the single "Generate from Intake" entry with two side-by-side buttons:
 
-Treat the paste as a formatted charge list when it contains 2+ category headings. A heading line matches one of the 10 categories from `CHARGE_CATEGORIES` (case-insensitive) optionally preceded by its emoji and/or extra words like "&", "and". Examples that must match:
-- `😬 FEAR & ANXIETY`
-- `FEAR AND ANXIETY`
-- `Self Doubt`
-- `💔 GRIEF & LOSS`
+1. **Generate from Intake** — existing AI/JSON/free-text flow (unchanged).
+2. **Paste by Category** — new flow described below.
 
-Mapping table (label → category key): Anger → `anger`, Resentment → `resentment`, Frustration → `frustration`, Fear & Anxiety / Fear and Anxiety → `fear_anxiety`, Self Doubt / Self-Doubt → `self_doubt`, Guilt & Shame → `guilt_shame`, Judgment → `judgment`, Infatuation → `infatuation`, Depression → `depression`, Grief & Loss → `grief_loss`.
+When "Paste by Category" is open, render a stacked panel: 10 collapsible category cards (using `CHARGE_CATEGORIES`), each with:
+- Category emoji + label header
+- A textarea ("One charge per line")
+- A live count: `N lines`
 
-## Verbatim parser
+Below the cards:
+- **Default level** number input (1–10, default 7) applied to every imported line
+- **Import N charges** primary button (shows total non-blank lines across all 10 textareas)
+- **Cancel** button
 
-Walk the pasted text line by line:
+Behaviour on import:
+- For each category, split textarea by `\r?\n`, trim, drop blank lines, strip leading bullets/numbers (`- `, `* `, `• `, `1. `).
+- Build `DraftCharge[]` with `category`, `statement`, `chargeLevel = defaultLevel`, `inferred: false`, `accepted: true`.
+- Push into existing `drafts` state and open the existing review panel (`showDraftReview = true`) so the admin can still toggle/edit before approving.
+- Set `verbatimCount` to total imported so the existing "Imported N charges verbatim" notice shows.
+- Toast: `"Loaded {N} charges across {M} categories"`.
 
-1. Trim each line. Skip blank lines.
-2. If the line matches a category heading → switch the "current category" to that key.
-3. Otherwise, if there is a current category, treat the line as a charge statement:
-   - Strip leading bullets/numbers (`- `, `* `, `• `, `1. `).
-   - Keep the statement text exactly as pasted (no rewording, no prefix injection).
-   - Default `chargeLevel` to `7` (mid-high; admin can adjust in review).
-   - Default `domain` to `both`, `source` to `stated`.
-   - Append to the drafts array.
-4. Lines before the first heading are ignored (e.g. preamble).
-
-No statement is dropped, merged, or summarised. The count of drafts must equal the count of non-heading, non-blank lines after the first heading.
-
-## UI changes
-
-- Same single "Generate" button. After parsing, show drafts in the existing review panel exactly like AI output.
-- Add a small toast/info line above the review list when verbatim mode was used: `"Imported {N} charges verbatim from pasted list"` so the admin can sanity-check the count against their source.
-- Update the textarea placeholder to mention the third supported format: a charge list with category headings.
+No edge function call. No AI. Count of drafts must equal sum of non-blank lines across textareas.
 
 ## Files to change
 
 - `src/components/dashboard/ChargeListManager.tsx`
-  - Add `parseFormattedChargeList(text)` helper (pure function, returns `DraftCharge[]` or `null` if not a formatted list).
-  - In `generateMutation.mutationFn`, try the parser first. If it returns a non-empty array, set drafts directly and return without calling the edge function. Otherwise fall through to the existing JSON / free-text AI path.
-  - Track whether the last batch was verbatim (local state) to render the count notice in the review panel.
-  - Update placeholder text.
+  - Add state: `showCategoryPaste: boolean`, `categoryPastes: Record<string, string>` (keyed by category key, init to ""), `defaultPasteLevel: number` (default 7).
+  - Add new button next to "Generate from Intake" that toggles `showCategoryPaste`.
+  - Add new panel rendered when `showCategoryPaste && !showDraftReview`, with the 10 textareas described above.
+  - Add `importByCategory()` handler that builds drafts and opens the review panel.
+  - Reuse the existing draft review + approve flow as-is.
 
-No edge function, schema, or roadmap code changes.
+No changes to `parseFormattedChargeList` (kept for the legacy paste-everything case), no edge function changes, no schema changes.
 
 ## Out of scope
 
-- Auto-detecting `priorityRank` / Big #1-#3 from pasted text (admin sets these in review as today).
-- Parsing blind-spot questions from pasted text (rare in admin pastes; admin can add manually).
-- Changing the AI prompt or its handling of free-text intake.
+- Auto-detecting `priorityRank` / Big #1-#3 from pastes (admin still sets in review).
+- Per-line level overrides (admin can adjust in review panel after import).
+- Removing the existing single-paste verbatim parser.
