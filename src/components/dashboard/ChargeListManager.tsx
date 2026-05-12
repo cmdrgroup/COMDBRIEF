@@ -277,11 +277,11 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
         {showIntakeForm && !showDraftReview && (
           <div className="mb-4 p-4 bg-background rounded-sm border border-accent/30 space-y-3">
             <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">Paste Intake Form Data</h4>
-            <p className="text-xs text-slate-grey">Paste the operator's intake form answers below. Can be JSON or free-text.</p>
+            <p className="text-xs text-slate-grey">Paste the operator's intake form answers below. Supports: JSON, free-text notes, or a pre-formatted charge list with category headings (imported verbatim, no AI).</p>
             <textarea
               value={intakeText}
               onChange={e => setIntakeText(e.target.value)}
-              placeholder={`{\n  "biggest_challenge": "Scaling my business past $500k",\n  "stress_level": "8/10",\n  "what_keeps_you_up": "Fear of going broke"\n}\n\nOr paste free-text intake notes...`}
+              placeholder={`Pre-formatted list (imported verbatim):\n😬 FEAR & ANXIETY\nI am scared of...\nI worry about...\n\n😡 ANGER\nI am angry that...\n\n— OR —\n\nJSON / free-text intake notes (AI generates charges)`}
               className="w-full h-40 bg-tactical-steel border border-gunmetal rounded-sm px-3 py-2 text-sm text-steel-white font-mono focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
