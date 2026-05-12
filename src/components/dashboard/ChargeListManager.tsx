@@ -312,7 +312,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
             <div className="p-4 bg-background rounded-sm border border-accent/30 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-mono text-[10px] uppercase tracking-widest text-accent">
-                  Review AI-Generated Charges ({drafts.filter(d => d.accepted).length}/{drafts.length} selected)
+                  {verbatimCount !== null ? `Review Imported Charges` : `Review AI-Generated Charges`} ({drafts.filter(d => d.accepted).length}/{drafts.length} selected)
                 </h4>
                 <div className="flex gap-2">
                   <button
