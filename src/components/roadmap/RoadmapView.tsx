@@ -210,7 +210,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
                         <input value={newDescription} onChange={e => setNewDescription(e.target.value)} placeholder="Description (optional)..." className="w-full bg-tactical-steel border border-gunmetal rounded-sm px-3 py-2 text-xs text-steel-white focus:outline-none focus:border-command-gold" />
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-[10px] text-slate-grey">Target Week:</span>
-                          <input type="number" min={1} max={12} value={newWeek} onChange={e => setNewWeek(Number(e.target.value))} className="w-14 bg-tactical-steel border border-gunmetal rounded-sm px-2 py-1 text-xs text-steel-white text-center focus:outline-none focus:border-command-gold" />
+                          <input type="number" min={1} max={totalWeeks} value={newWeek} onChange={e => setNewWeek(Number(e.target.value))} className="w-14 bg-tactical-steel border border-gunmetal rounded-sm px-2 py-1 text-xs text-steel-white text-center focus:outline-none focus:border-command-gold" />
                           <div className="flex-1" />
                           <button onClick={() => newTitle.trim() && addMutation.mutate(phase.key)} disabled={!newTitle.trim()} className="px-3 py-1.5 bg-command-gold text-background text-xs font-heading uppercase tracking-widest rounded-sm disabled:opacity-50">Add</button>
                           <button onClick={() => setAddingToPhase(null)} className="px-3 py-1.5 text-xs text-slate-grey">Cancel</button>
