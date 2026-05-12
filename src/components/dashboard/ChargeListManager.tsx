@@ -93,6 +93,50 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   const [drafts, setDrafts] = useState<DraftCharge[]>([]);
   const [showDraftReview, setShowDraftReview] = useState(false);
   const [verbatimCount, setVerbatimCount] = useState<number | null>(null);
+  const [showCategoryPaste, setShowCategoryPaste] = useState(false);
+  const [categoryPastes, setCategoryPastes] = useState<Record<string, string>>(
+    () => Object.fromEntries(CHARGE_CATEGORIES.map(c => [c.key, ""]))
+  );
+  const [defaultPasteLevel, setDefaultPasteLevel] = useState(7);
+
+  const cleanLine = (l: string) => l.replace(/^([-*•]|\d+[.)])\s+/, "").trim();
+  const countCategoryLines = (text: string) =>
+    text.split(/\r?\n/).map(l => cleanLine(l.trim())).filter(Boolean).length;
+  const totalPasteLines = Object.values(categoryPastes).reduce(
+    (sum, t) => sum + countCategoryLines(t),
+    0
+  );
+
+  const importByCategory = () => {
+    const newDrafts: DraftCharge[] = [];
+    let categoriesUsed = 0;
+    for (const cat of CHARGE_CATEGORIES) {
+      const lines = categoryPastes[cat.key]
+        .split(/\r?\n/)
+        .map(l => cleanLine(l.trim()))
+        .filter(Boolean);
+      if (lines.length === 0) continue;
+      categoriesUsed++;
+      for (const statement of lines) {
+        newDrafts.push({
+          category: cat.key,
+          statement,
+          chargeLevel: defaultPasteLevel,
+          inferred: false,
+          accepted: true,
+        });
+      }
+    }
+    if (newDrafts.length === 0) {
+      toast({ title: "Nothing to import", description: "Paste at least one charge into a category.", variant: "destructive" });
+      return;
+    }
+    setDrafts(newDrafts);
+    setVerbatimCount(newDrafts.length);
+    setShowDraftReview(true);
+    setShowCategoryPaste(false);
+    toast({ title: "Loaded charges", description: `Loaded ${newDrafts.length} charges across ${categoriesUsed} categories.` });
+  };
 
   const { data: items = [] } = useQuery({
     queryKey: ["charge_items", operatorId],
