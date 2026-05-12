@@ -88,6 +88,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
     if (phaseItems.length === 0) return 0;
     return Math.round((phaseItems.filter(i => i.completed).length / phaseItems.length) * 100);
   };
+  const totalWeeks = items.reduce((max, it) => Math.max(max, it.target_week ?? 0), 0) || 12;
 
   const isPhaseAccessible = (phaseKey: string) => {
     if (isCommand) return true;
