@@ -110,7 +110,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
           <div className="h-full bg-command-gold rounded-full transition-all" style={{ width: `${overallProgress}%` }} />
         </div>
         <p className="font-mono text-[10px] text-slate-grey mt-2">
-          {completedItems} of {totalItems} items completed · Week {currentWeek} of {items.reduce((max, it) => Math.max(max, it.target_week ?? 0), 0) || 12}
+          {completedItems} of {totalItems} items completed · Week {currentWeek} of {totalWeeks}
         </p>
       </div>
 
