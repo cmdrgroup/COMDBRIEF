@@ -130,7 +130,7 @@ const RoadmapView = ({ operatorId, isCommand = false, currentWeek = 1 }: Roadmap
                 {!accessible && <Lock className="w-4 h-4 text-slate-grey" />}
                 <div className="text-left">
                   <span className="font-heading text-sm uppercase tracking-wider text-steel-white">Phase {phase.number}: {phase.label}</span>
-                  <p className="font-mono text-[10px] text-slate-grey mt-0.5">{phase.weeks}</p>
+                  <p className="font-mono text-[10px] text-slate-grey mt-0.5">{getPhaseWeeksLabel(phase.key)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
