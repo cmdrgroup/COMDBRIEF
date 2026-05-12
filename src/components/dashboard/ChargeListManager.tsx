@@ -32,6 +32,7 @@ const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListMana
   const [intakeText, setIntakeText] = useState("");
   const [drafts, setDrafts] = useState<DraftCharge[]>([]);
   const [showDraftReview, setShowDraftReview] = useState(false);
+  const [verbatimCount, setVerbatimCount] = useState<number | null>(null);
 
   const { data: items = [] } = useQuery({
     queryKey: ["charge_items", operatorId],
