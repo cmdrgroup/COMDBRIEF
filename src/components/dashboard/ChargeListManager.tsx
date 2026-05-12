@@ -20,6 +20,66 @@ interface ChargeListManagerProps {
   onClose: () => void;
 }
 
+// Heading label -> category key
+const CATEGORY_HEADING_MAP: Array<{ patterns: RegExp[]; key: string }> = [
+  { key: "fear_anxiety", patterns: [/^fear\s*(&|and)\s*anxiety$/i, /^fear$/i, /^anxiety$/i] },
+  { key: "self_doubt", patterns: [/^self[\s-]?doubt$/i] },
+  { key: "guilt_shame", patterns: [/^guilt\s*(&|and)\s*shame$/i, /^guilt$/i, /^shame$/i] },
+  { key: "grief_loss", patterns: [/^grief\s*(&|and)\s*loss$/i, /^grief$/i, /^loss$/i] },
+  { key: "anger", patterns: [/^anger$/i] },
+  { key: "resentment", patterns: [/^resentment$/i] },
+  { key: "frustration", patterns: [/^frustration$/i] },
+  { key: "judgment", patterns: [/^judgment$/i, /^judgement$/i] },
+  { key: "infatuation", patterns: [/^infatuation$/i] },
+  { key: "depression", patterns: [/^depression$/i] },
+];
+
+function matchHeading(line: string): string | null {
+  // Strip emoji/symbols/punctuation, keep letters/spaces/&/-
+  const cleaned = line
+    .replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}]/gu, "")
+    .replace(/[^\p{L}\s&-]/gu, "")
+    .trim()
+    .replace(/\s+/g, " ");
+  if (!cleaned || cleaned.length > 30) return null;
+  for (const { patterns, key } of CATEGORY_HEADING_MAP) {
+    if (patterns.some(p => p.test(cleaned))) return key;
+  }
+  return null;
+}
+
+function parseFormattedChargeList(text: string): DraftCharge[] | null {
+  const lines = text.split(/\r?\n/);
+  const drafts: DraftCharge[] = [];
+  let currentCategory: string | null = null;
+  let headingCount = 0;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const headingKey = matchHeading(line);
+    if (headingKey) {
+      currentCategory = headingKey;
+      headingCount++;
+      continue;
+    }
+    if (!currentCategory) continue;
+    const statement = line.replace(/^([-*•]|\d+[.)])\s+/, "").trim();
+    if (!statement) continue;
+    drafts.push({
+      category: currentCategory,
+      statement,
+      chargeLevel: 7,
+      inferred: false,
+      accepted: true,
+    });
+  }
+
+  if (headingCount < 2 || drafts.length === 0) return null;
+  return drafts;
+}
+
+
 const ChargeListManager = ({ operatorId, operatorName, onClose }: ChargeListManagerProps) => {
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<string>(CHARGE_CATEGORIES[0].key);
